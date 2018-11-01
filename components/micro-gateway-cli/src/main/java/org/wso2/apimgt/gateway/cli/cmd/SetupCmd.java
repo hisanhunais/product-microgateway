@@ -37,11 +37,10 @@ import org.wso2.apimgt.gateway.cli.exception.CliLauncherException;
 import org.wso2.apimgt.gateway.cli.exception.ConfigParserException;
 import org.wso2.apimgt.gateway.cli.exception.HashingException;
 import org.wso2.apimgt.gateway.cli.hashing.HashUtils;
-import org.wso2.apimgt.gateway.cli.model.config.Client;
-import org.wso2.apimgt.gateway.cli.model.config.Config;
-import org.wso2.apimgt.gateway.cli.model.config.ContainerConfig;
-import org.wso2.apimgt.gateway.cli.model.config.Token;
-import org.wso2.apimgt.gateway.cli.model.config.TokenBuilder;
+import org.wso2.apimgt.gateway.cli.model.config.*;
+import org.wso2.apimgt.gateway.cli.model.config.Etcd;
+import org.wso2.apimgt.gateway.cli.model.rest.Endpoint;
+import org.wso2.apimgt.gateway.cli.model.rest.ServiceDiscovery;
 import org.wso2.apimgt.gateway.cli.model.rest.ext.ExtendedAPI;
 import org.wso2.apimgt.gateway.cli.model.rest.policy.ApplicationThrottlePolicyDTO;
 import org.wso2.apimgt.gateway.cli.model.rest.policy.SubscriptionThrottlePolicyDTO;
@@ -51,9 +50,7 @@ import org.wso2.apimgt.gateway.cli.rest.RESTAPIService;
 import org.wso2.apimgt.gateway.cli.rest.RESTAPIServiceImpl;
 import org.wso2.apimgt.gateway.cli.utils.GatewayCmdUtils;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -119,19 +116,25 @@ public class SetupCmd implements GatewayLauncherCmd {
     @Parameter(names = { "-k", "--insecure" }, hidden = true, arity = 0)
     private boolean isInsecure;
 
+    @Parameter(names = { "-etcd", "--etcd" }, hidden = true, arity = 0)
+    private boolean isEtcd;
+
+    @SuppressWarnings("unused")
+    @Parameter(names = { "-ettcd", "--ettcd" }, hidden = true)
+    private String Etcd;
+
     private String publisherEndpoint;
     private String adminEndpoint;
     private String registrationEndpoint;
     private String tokenEndpoint;
     private String clientSecret;
+    private ServiceDiscovery serviceDiscovery = null;
 
     public void execute() {
         String clientID;
         String workspace = GatewayCmdUtils.getUserDir();
-
         String projectName = GatewayCmdUtils.getProjectName(mainArgs);
         validateAPIGetRequestParams(label, apiName, version);
-
         if (StringUtils.isEmpty(toolkitConfigPath)) {
             toolkitConfigPath = GatewayCmdUtils.getMainConfigLocation();
         }
@@ -141,7 +144,6 @@ public class SetupCmd implements GatewayLauncherCmd {
                     + "` already exist. use -f or --force to forcefully update the project directory.");
         }
         init(projectName, toolkitConfigPath, deploymentConfigPath);
-
         Config config = GatewayCmdUtils.getConfig();
         boolean isOverwriteRequired = false;
 
@@ -169,7 +171,6 @@ public class SetupCmd implements GatewayLauncherCmd {
                 }
             }
         }
-
         //Setup urls
         publisherEndpoint = config.getToken().getPublisherEndpoint();
         adminEndpoint = config.getToken().getAdminEndpoint();
@@ -243,7 +244,6 @@ public class SetupCmd implements GatewayLauncherCmd {
         System.setProperty("javax.net.ssl.keyStoreType", "pkcs12");
         System.setProperty("javax.net.ssl.trustStore", trustStoreLocation);
         System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
-
         OAuthService manager = new OAuthServiceImpl();
         clientID = config.getToken().getClientId();
         String encryptedSecret = config.getToken().getClientSecret();
@@ -255,18 +255,15 @@ public class SetupCmd implements GatewayLauncherCmd {
                 clientSecret = null;
             }
         }
-
         if (StringUtils.isEmpty(clientID) || StringUtils.isEmpty(clientSecret)) {
             String[] clientInfo = manager
                     .generateClientIdAndSecret(registrationEndpoint, username, password.toCharArray(), isInsecure);
             clientID = clientInfo[0];
             clientSecret = clientInfo[1];
         }
-
         String accessToken = manager
                 .generateAccessToken(tokenEndpoint, username, password.toCharArray(), clientID, clientSecret,
                         isInsecure);
-
         List<ExtendedAPI> apis = new ArrayList<>();
         RESTAPIService service = new RESTAPIServiceImpl(publisherEndpoint, adminEndpoint,isInsecure);
         if (label != null) {
@@ -291,6 +288,37 @@ public class SetupCmd implements GatewayLauncherCmd {
         List<ApplicationThrottlePolicyDTO> applicationPolicies = service.getApplicationPolicies(accessToken);
         List<SubscriptionThrottlePolicyDTO> subscriptionPolicies = service.getSubscriptionPolicies(accessToken);
 
+        Etcd etcd = new Etcd();
+        etcd.setEtcdEnabled(isEtcd);
+        GatewayCmdUtils.setEtcd(etcd);
+
+        if(isEtcd)
+        {
+            try
+            {
+                GatewayCmdUtils.createEtcdFile(projectName);
+            }
+            catch(IOException e)
+            {
+                logger.error("Failed to create temporary Etcd file ", e);
+                throw new CLIInternalException("Error occurred while setting up the workspace structure");
+            }
+        }
+//        else
+//        {   //GatewayCmdUtils.changePropertyForEtcd("true");
+//            GatewayCmdUtils.changePropertyForEtcd("false");
+//        }
+
+//        if(Etcd != null)
+//        {
+//            serviceDiscovery = new ServiceDiscovery();
+//            serviceDiscovery.setEndpointType("etcd");
+//            Endpoint etcdEndpoint = new Endpoint();
+//            etcdEndpoint.setEndpointUrl(Etcd);
+//            serviceDiscovery.setEndpoint(etcdEndpoint);
+//        }
+
+
         ThrottlePolicyGenerator policyGenerator = new ThrottlePolicyGenerator();
         CodeGenerator codeGenerator = new CodeGenerator();
         boolean changesDetected;
@@ -312,7 +340,6 @@ public class SetupCmd implements GatewayLauncherCmd {
             logger.error("Error while generating ballerina source.");
             throw new CLIInternalException("Error while generating ballerina source.");
         }
-
         //if all the operations are success, write new config to file
         if (isOverwriteRequired) {
             Config newConfig = new Config();
@@ -389,6 +416,7 @@ public class SetupCmd implements GatewayLauncherCmd {
 
     private String promptForPasswordInput(String msg) {
         outStream.println(msg);
+        //return "admin";
         return new String(System.console().readPassword());
     }
 
@@ -417,7 +445,6 @@ public class SetupCmd implements GatewayLauncherCmd {
                 logger.error("Configuration: {} Not found.", configPath);
                 throw new CLIInternalException("Error occurred while loading configurations.");
             }
-
             deploymentConfigPath = GatewayCmdUtils.getDeploymentConfigLocation(projectName);
             ContainerConfig containerConfig = TOMLConfigParser.parse(deploymentConfigPath, ContainerConfig.class);
             GatewayCmdUtils.setContainerConfig(containerConfig);
@@ -433,4 +460,6 @@ public class SetupCmd implements GatewayLauncherCmd {
             throw new CLIInternalException("Error occurred while loading configurations.");
         }
     }
+
+
 }
