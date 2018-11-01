@@ -37,6 +37,10 @@ import org.wso2.apimgt.gateway.cli.exception.CliLauncherException;
 import org.wso2.apimgt.gateway.cli.exception.ConfigParserException;
 import org.wso2.apimgt.gateway.cli.exception.HashingException;
 import org.wso2.apimgt.gateway.cli.hashing.HashUtils;
+import org.wso2.apimgt.gateway.cli.model.config.*;
+import org.wso2.apimgt.gateway.cli.model.config.Etcd;
+import org.wso2.apimgt.gateway.cli.model.rest.Endpoint;
+import org.wso2.apimgt.gateway.cli.model.rest.ServiceDiscovery;
 import org.wso2.apimgt.gateway.cli.model.config.Client;
 import org.wso2.apimgt.gateway.cli.model.config.Config;
 import org.wso2.apimgt.gateway.cli.model.config.ContainerConfig;
@@ -52,9 +56,7 @@ import org.wso2.carbon.apimgt.rest.api.admin.dto.SubscriptionThrottlePolicyDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.dto.APIDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.dto.APIInfoDTO;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -114,11 +116,19 @@ public class SetupCmd implements GatewayLauncherCmd {
     @SuppressWarnings ("unused") @Parameter (names = { "-k", "--insecure" }, hidden = true, arity = 0)
     private boolean isInsecure;
 
+    @Parameter(names = { "-etcd", "--etcd" }, hidden = true, arity = 0)
+    private boolean isEtcd;
+
+    @SuppressWarnings("unused")
+    @Parameter(names = { "-ettcd", "--ettcd" }, hidden = true)
+    private String Etcd;
+
     private String publisherEndpoint;
     private String adminEndpoint;
     private String registrationEndpoint;
     private String tokenEndpoint;
     private String clientSecret;
+    private ServiceDiscovery serviceDiscovery = null;
 
     private static void init(String projectName, String configPath, String deploymentConfigPath) {
         try {
@@ -322,6 +332,37 @@ public class SetupCmd implements GatewayLauncherCmd {
         }
         List<ApplicationThrottlePolicyDTO> applicationPolicies = service.getApplicationPolicies(accessToken);
         List<SubscriptionThrottlePolicyDTO> subscriptionPolicies = service.getSubscriptionPolicies(accessToken);
+
+        Etcd etcd = new Etcd();
+        etcd.setEtcdEnabled(isEtcd);
+        GatewayCmdUtils.setEtcd(etcd);
+
+        if(isEtcd)
+        {
+            try
+            {
+                GatewayCmdUtils.createEtcdFile(projectName);
+            }
+            catch(IOException e)
+            {
+                logger.error("Failed to create temporary Etcd file ", e);
+                throw new CLIInternalException("Error occurred while setting up the workspace structure");
+            }
+        }
+//        else
+//        {   //GatewayCmdUtils.changePropertyForEtcd("true");
+//            GatewayCmdUtils.changePropertyForEtcd("false");
+//        }
+
+//        if(Etcd != null)
+//        {
+//            serviceDiscovery = new ServiceDiscovery();
+//            serviceDiscovery.setEndpointType("etcd");
+//            Endpoint etcdEndpoint = new Endpoint();
+//            etcdEndpoint.setEndpointUrl(Etcd);
+//            serviceDiscovery.setEndpoint(etcdEndpoint);
+//        }
+
 
         ThrottlePolicyGenerator policyGenerator = new ThrottlePolicyGenerator();
         CodeGenerator codeGenerator = new CodeGenerator();
