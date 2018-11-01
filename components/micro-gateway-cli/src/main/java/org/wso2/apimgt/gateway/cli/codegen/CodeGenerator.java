@@ -26,6 +26,7 @@ import io.swagger.parser.SwaggerParser;
 import org.wso2.apimgt.gateway.cli.constants.GatewayCliConstants;
 import org.wso2.apimgt.gateway.cli.constants.GeneratorConstants;
 import org.wso2.apimgt.gateway.cli.exception.BallerinaServiceGenException;
+import org.wso2.apimgt.gateway.cli.model.rest.ServiceDiscovery;
 import org.wso2.apimgt.gateway.cli.model.rest.ext.ExtendedAPI;
 import org.wso2.apimgt.gateway.cli.model.template.GenSrcFile;
 import org.wso2.apimgt.gateway.cli.model.template.service.BallerinaService;
@@ -75,6 +76,11 @@ public class CodeGenerator {
             parser = new SwaggerParser();
             swagger = parser.parse(api.getApiDefinition());
             definitionContext = new BallerinaService().buildContext(swagger, api);
+//            if(isEtcd)
+//            {
+//                definitionContext.setEtcd(isEtcd);
+//            }
+
             // we need to generate the bal service for default versioned apis as well
             if (definitionContext.getApi().getIsDefaultVersion()) {
                 // without building the definitionContext again we use the same context to build default version as
@@ -91,6 +97,7 @@ public class CodeGenerator {
         }
         genFiles.add(generateCommonEndpoints());
         CodegenUtils.writeGeneratedSources(genFiles, Paths.get(projectSrcPath), overwrite);
+
         GatewayCmdUtils.copyFilesToSources(GatewayCmdUtils.getFiltersFolderLocation() + File.separator
                         + GatewayCliConstants.GW_DIST_EXTENSION_FILTER,
                 projectSrcPath + File.separator + GatewayCliConstants.GW_DIST_EXTENSION_FILTER);
@@ -150,7 +157,8 @@ public class CodeGenerator {
         String concatTitle = context.getQualifiedServiceName();
         String srcFile = concatTitle + GeneratorConstants.BALLERINA_EXTENSION;
         String mainContent = getContent(context, GeneratorConstants.DEFAULT_TEMPLATE_DIR,
-                GeneratorConstants.SERVICE_TEMPLATE_NAME);
+                GeneratorConstants.ETCD_TEMPLATE_NAME);
+        //System.out.println(context.getEndpointConfig().getProdEndpoints().getEndpoints().get(0).getEndpointUrl());
         return new GenSrcFile(GenSrcFile.GenFileType.GEN_SRC, srcFile, mainContent);
     }
 
@@ -165,6 +173,7 @@ public class CodeGenerator {
         ListenerEndpoint listnerEndpoint = new ListenerEndpoint().buildContext();
         String endpointContent = getContent(listnerEndpoint, GeneratorConstants.DEFAULT_TEMPLATE_DIR,
                 GeneratorConstants.LISTENERS_TEMPLATE_NAME);
+        //System.out.println(endpointContent);
         return new GenSrcFile(GenSrcFile.GenFileType.GEN_SRC, srcFile, endpointContent);
     }
 
