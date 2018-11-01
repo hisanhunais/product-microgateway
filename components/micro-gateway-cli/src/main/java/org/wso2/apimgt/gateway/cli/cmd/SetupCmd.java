@@ -307,20 +307,6 @@ public class SetupCmd implements GatewayLauncherCmd {
         etcd.setEtcdEnabled(isEtcd);
         GatewayCmdUtils.setEtcd(etcd);
 
-        if(isEtcd)
-        {
-            try
-            {
-                GatewayCmdUtils.createEtcdFile(projectName);
-            }
-            catch(IOException e)
-            {
-                logger.error("Failed to create temporary Etcd file ", e);
-                throw new CLIInternalException("Error occurred while setting up the workspace structure");
-            }
-        }
-
-
         ThrottlePolicyGenerator policyGenerator = new ThrottlePolicyGenerator();
         CodeGenerator codeGenerator = new CodeGenerator();
         boolean changesDetected;
