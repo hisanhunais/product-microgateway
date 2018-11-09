@@ -24,7 +24,6 @@ import io.swagger.models.Tag;
 import org.wso2.apimgt.gateway.cli.exception.BallerinaServiceGenException;
 import org.wso2.apimgt.gateway.cli.model.config.ContainerConfig;
 import org.wso2.apimgt.gateway.cli.model.config.Etcd;
-import org.wso2.apimgt.gateway.cli.model.rest.ServiceDiscovery;
 import org.wso2.apimgt.gateway.cli.utils.CodegenUtils;
 import org.wso2.apimgt.gateway.cli.utils.GatewayCmdUtils;
 import org.wso2.carbon.apimgt.rest.api.publisher.dto.APIDTO;
@@ -55,8 +54,6 @@ public class BallerinaService implements BallerinaSwaggerObject<BallerinaService
     private Set<Map.Entry<String, String>> security = null;
     private List<Tag> tags = null;
     private Set<Map.Entry<String, BallerinaPath>> paths = null;
-    private ServiceDiscovery serviceDiscovery = null;
-    private boolean isEtcd;
     private Etcd etcd;
 
     /**
@@ -205,19 +202,5 @@ public class BallerinaService implements BallerinaSwaggerObject<BallerinaService
 
     public void setContainerConfig(ContainerConfig containerConfig) {
         this.containerConfig = containerConfig;
-    }
-
-
-    public void setServiceDiscovery(ServiceDiscovery serviceDiscovery) {
-        this.serviceDiscovery = serviceDiscovery;
-    }
-
-    public ServiceDiscovery getServiceDiscovery() {
-        return serviceDiscovery;
-    }
-
-    public void setEtcd(boolean isEtcd)
-    {
-        this.isEtcd = isEtcd;
     }
 }
