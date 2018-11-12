@@ -26,7 +26,6 @@ import io.swagger.parser.SwaggerParser;
 import org.wso2.apimgt.gateway.cli.constants.GatewayCliConstants;
 import org.wso2.apimgt.gateway.cli.constants.GeneratorConstants;
 import org.wso2.apimgt.gateway.cli.exception.BallerinaServiceGenException;
-import org.wso2.apimgt.gateway.cli.model.rest.ServiceDiscovery;
 import org.wso2.apimgt.gateway.cli.model.rest.ext.ExtendedAPI;
 import org.wso2.apimgt.gateway.cli.model.template.GenSrcFile;
 import org.wso2.apimgt.gateway.cli.model.template.service.BallerinaService;
@@ -157,8 +156,7 @@ public class CodeGenerator {
         String concatTitle = context.getQualifiedServiceName();
         String srcFile = concatTitle + GeneratorConstants.BALLERINA_EXTENSION;
         String mainContent = getContent(context, GeneratorConstants.DEFAULT_TEMPLATE_DIR,
-                GeneratorConstants.ETCD_TEMPLATE_NAME);
-        //System.out.println(context.getEndpointConfig().getProdEndpoints().getEndpoints().get(0).getEndpointUrl());
+                GeneratorConstants.SERVICE_TEMPLATE_NAME);
         return new GenSrcFile(GenSrcFile.GenFileType.GEN_SRC, srcFile, mainContent);
     }
 
@@ -173,7 +171,6 @@ public class CodeGenerator {
         ListenerEndpoint listnerEndpoint = new ListenerEndpoint().buildContext();
         String endpointContent = getContent(listnerEndpoint, GeneratorConstants.DEFAULT_TEMPLATE_DIR,
                 GeneratorConstants.LISTENERS_TEMPLATE_NAME);
-        //System.out.println(endpointContent);
         return new GenSrcFile(GenSrcFile.GenFileType.GEN_SRC, srcFile, endpointContent);
     }
 
