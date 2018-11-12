@@ -42,10 +42,7 @@ import org.wso2.apimgt.gateway.cli.model.config.Config;
 import org.wso2.apimgt.gateway.cli.model.config.ContainerConfig;
 import org.wso2.apimgt.gateway.cli.model.config.Token;
 import org.wso2.apimgt.gateway.cli.model.config.TokenBuilder;
-import org.wso2.apimgt.gateway.cli.model.config.*;
 import org.wso2.apimgt.gateway.cli.model.config.Etcd;
-import org.wso2.apimgt.gateway.cli.model.rest.Endpoint;
-import org.wso2.apimgt.gateway.cli.model.rest.ServiceDiscovery;
 import org.wso2.apimgt.gateway.cli.model.rest.ext.ExtendedAPI;
 import org.wso2.apimgt.gateway.cli.model.rest.policy.ApplicationThrottlePolicyDTO;
 import org.wso2.apimgt.gateway.cli.model.rest.policy.SubscriptionThrottlePolicyDTO;
@@ -125,10 +122,6 @@ public class SetupCmd implements GatewayLauncherCmd {
 
     @Parameter(names = { "-etcd", "--etcd" }, hidden = true, arity = 0)
     private boolean isEtcd;
-
-    @SuppressWarnings("unused")
-    @Parameter(names = { "-ettcd", "--ettcd" }, hidden = true)
-    private String Etcd;
 
     private String publisherEndpoint;
     private String adminEndpoint;
@@ -303,6 +296,7 @@ public class SetupCmd implements GatewayLauncherCmd {
         List<ApplicationThrottlePolicyDTO> applicationPolicies = service.getApplicationPolicies(accessToken);
         List<SubscriptionThrottlePolicyDTO> subscriptionPolicies = service.getSubscriptionPolicies(accessToken);
 
+        //set etcd requirement
         Etcd etcd = new Etcd();
         etcd.setEtcdEnabled(isEtcd);
         GatewayCmdUtils.setEtcd(etcd);
