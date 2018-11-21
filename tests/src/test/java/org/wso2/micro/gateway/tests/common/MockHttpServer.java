@@ -76,6 +76,8 @@ public class MockHttpServer extends Thread {
     private String AdminRestAPIBasePath = "/api/am/admin/v0.14";
     public final static String PROD_ENDPOINT_RESPONSE = "{\"type\": \"production\"}";
     public final static String SAND_ENDPOINT_RESPONSE = "{\"type\": \"sandbox\"}";
+    public final static String PROD_ENDPOINT_NEW_RESPONSE = "{\"type\": \"new-production\"}";
+    public final static String SAND_ENDPOINT_NEW_RESPONSE = "{\"type\": \"new-sandbox\"}";
 
     public static void main(String[] args) {
 
@@ -150,10 +152,28 @@ public class MockHttpServer extends Thread {
                     exchange.close();
                 }
             });
+            httpServer.createContext("/echo/newprod", new HttpHandler() {
+                public void handle(HttpExchange exchange) throws IOException {
+
+                    byte[] response = PROD_ENDPOINT_NEW_RESPONSE.toString().getBytes();
+                    exchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, response.length);
+                    exchange.getResponseBody().write(response);
+                    exchange.close();
+                }
+            });
             httpServer.createContext("/echo/sand", new HttpHandler() {
                 public void handle(HttpExchange exchange) throws IOException {
 
                     byte[] response = SAND_ENDPOINT_RESPONSE.toString().getBytes();
+                    exchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, response.length);
+                    exchange.getResponseBody().write(response);
+                    exchange.close();
+                }
+            });
+            httpServer.createContext("/echo/newsand", new HttpHandler() {
+                public void handle(HttpExchange exchange) throws IOException {
+
+                    byte[] response = SAND_ENDPOINT_NEW_RESPONSE.toString().getBytes();
                     exchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, response.length);
                     exchange.getResponseBody().write(response);
                     exchange.close();
@@ -176,8 +196,8 @@ public class MockHttpServer extends Thread {
                 }
             });
             httpServer.createContext(PubRestAPIBasePath + "/apis", new HttpHandler() {
-                public void handle(HttpExchange exchange) throws IOException {
 
+                public void handle(HttpExchange exchange) throws IOException {
                     String query = parseParas(exchange.getRequestURI()).get("query");
                     String[] paras = URLDecoder.decode(query, GatewayCliConstants.CHARSET_UTF8).split(" ");
                     String label = null;
@@ -335,4 +355,3 @@ public class MockHttpServer extends Thread {
         return sslContext;
     }
 }
-
