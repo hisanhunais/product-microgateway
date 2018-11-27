@@ -340,7 +340,9 @@
 @final string KEY_UPLOAD_TASK = "UploadTimerTask";
 @final string KEY_ROTATE_TASK = "RotateTimerTask";
 @final string KEY_ETCD_UTIL = "EtcdUtil";
+@final string KEY_CONSUL_UTIL = "ConsulUtil";
 
 
 @final public int DEFAULT_LISTENER_TIMEOUT = 120000; //2 mins
 @final public int DEFAULT_ETCD_TRIGGER_TIME = 10000; //10 seconds
+@final public int DEFAULT_CONSUL_TRIGGER_TIME = 10000; //10 seconds

@@ -67,16 +67,19 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
         http:Response|error clientResponse;
         string destination_attribute;
         runtime:getInvocationContext().attributes["timeStampRequestOut"] = time:currentTime().time;
-        {{#equals etcd.etcdEnabled "true"}}boolean reinitRequired;
-        string etcdKey;
+        {{#if serviceDiscovery.isEnabled}}boolean reinitRequired;
+        string key;
         boolean|error hasUrlChanged;
-        http:ClientEndpointConfig newConfig;{{/equals}}
+        http:ClientEndpointConfig newConfig;{{/if}}
         {{#endpointConfig.prodEndpoints}}
             {{#endpointConfig.sandEndpoints}}
                 if("PRODUCTION" == runtime:getInvocationContext().attributes["KEY_TYPE"]) {
                     destination_attribute = "{{endpointConfig.prodEndpoints.endpoints.0.endpointUrl}}";
-                {{#equals etcd.etcdEnabled "true"}}
-                    etcdKey = gateway:retrieveConfig("{{api.name}}.{{api.version}}.prod.etcd.key", "");
+                {{#if serviceDiscovery.isEnabled}}
+                    {{#equals serviceDiscovery.etcd.etcdEnabled "true"}}
+                    key = gateway:retrieveConfig("{{api.name}}.{{api.version}}.prod.etcd.key", "");{{/equals}}
+                    {{#equals serviceDiscovery.consul.consulEnabled "true"}}
+                    key = gateway:retrieveConfig("{{api.name}}.{{api.version}}.prod.consul.key", "");{{/equals}}
                     if(etcdKey != "" && gateway:etcdConnectionEstablished)
                     {
                         hasUrlChanged = <boolean>gateway:urlChanged[etcdKey];
@@ -92,27 +95,45 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
                             {{qualifiedServiceName}}_prod.init(newConfig);
                         }
                     }
+                {{/if}}
+                {{#equals serviceDiscovery.consul.consulEnabled "true"}}
+                    consulKey = gateway:retrieveConfig("{{api.name}}.{{api.version}}.prod.consul.key", "");
+                    if(consulKey != "")
+                    {
+                    hasUrlChanged = <boolean>gateway:consulurlChanged[consulKey];
+                    match hasUrlChanged{
+                    boolean matchUrlChanged => reinitRequired=matchUrlChanged;
+                    error err => log:printError("Error in checking for Re-initialization", err = err);
+                    }
+                    if(reinitRequired)
+                    {
+                    newConfig = {url:<string>gateway:consulUrls[consulKey]};
+                    destination_attribute = <string>gateway:consulUrls[consulKey];
+                    gateway:consulurlChanged[consulKey] = false;
+                    {{qualifiedServiceName}}_prod.init(newConfig);
+                    }
+                    }
                 {{/equals}}
                     clientResponse = {{qualifiedServiceName}}_prod->forward(urlPostfix, req);
                     runtime:getInvocationContext().attributes["destination"] = destination_attribute;
                 } else {
                     destination_attribute = "{{endpointConfig.sandEndpoints.endpoints.0.endpointUrl}}";
-                {{#equals etcd.etcdEnabled "true"}}
-                    etcdKey = gateway:retrieveConfig("{{api.name}}.{{api.version}}.sand.etcd.key", "");
-                    if(etcdKey != "" && gateway:etcdConnectionEstablished)
+                {{#equals serviceDiscovery.consul.consulEnabled "true"}}
+                    consulKey = gateway:retrieveConfig("{{api.name}}.{{api.version}}.sand.consul.key", "");
+                    if(consulKey != "")
                     {
-                        hasUrlChanged = <boolean>gateway:urlChanged[etcdKey];
-                        match hasUrlChanged{
-                            boolean matchUrlChanged => reinitRequired=matchUrlChanged;
-                            error err => log:printError("Error in checking for Re-initialization", err = err);
-                        }
-                        if(reinitRequired)
-                        {
-                            newConfig = {url:<string>gateway:etcdUrls[etcdKey]};
-                            destination_attribute = <string>gateway:etcdUrls[etcdKey];
-                            gateway:urlChanged[etcdKey] = false;
-                            {{qualifiedServiceName}}_sand.init(newConfig);
-                        }
+                    hasUrlChanged = <boolean>gateway:consulurlChanged[consulKey];
+                    match hasUrlChanged{
+                    boolean matchUrlChanged => reinitRequired=matchUrlChanged;
+                    error err => log:printError("Error in checking for Re-initialization", err = err);
+                    }
+                    if(reinitRequired)
+                    {
+                    newConfig = {url:<string>gateway:consulUrls[consulKey]};
+                    destination_attribute = <string>gateway:consulUrls[consulKey];
+                    gateway:consulurlChanged[consulKey] = false;
+                    {{qualifiedServiceName}}_sand.init(newConfig);
+                    }
                     }
                 {{/equals}}
                     clientResponse = {{qualifiedServiceName}}_sand->forward(urlPostfix, req);
@@ -122,22 +143,22 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
             {{^endpointConfig.sandEndpoints}}
                 if("PRODUCTION" == runtime:getInvocationContext().attributes["KEY_TYPE"]) {
                     destination_attribute = "{{endpointConfig.prodEndpoints.endpoints.0.endpointUrl}}";
-                {{#equals etcd.etcdEnabled "true"}}
-                    etcdKey = gateway:retrieveConfig("{{api.name}}.{{api.version}}.prod.etcd.key", "");
-                    if(etcdKey != "" && gateway:etcdConnectionEstablished)
+                {{#equals serviceDiscovery.consul.consulEnabled "true"}}
+                    consulKey = gateway:retrieveConfig("{{api.name}}.{{api.version}}.prod.consul.key", "");
+                    if(consulKey != "")
                     {
-                        hasUrlChanged = <boolean>gateway:urlChanged[etcdKey];
-                        match hasUrlChanged{
-                            boolean matchUrlChanged => reinitRequired=matchUrlChanged;
-                            error err => log:printError("Error in checking for Re-initialization", err = err);
-                        }
-                        if(reinitRequired)
-                        {
-                            newConfig = {url:<string>gateway:etcdUrls[etcdKey]};
-                            destination_attribute = <string>gateway:etcdUrls[etcdKey];
-                            gateway:urlChanged[etcdKey] = false;
-                            {{qualifiedServiceName}}_prod.init(newConfig);
-                        }
+                    hasUrlChanged = <boolean>gateway:consulurlChanged[consulKey];
+                    match hasUrlChanged{
+                    boolean matchUrlChanged => reinitRequired=matchUrlChanged;
+                    error err => log:printError("Error in checking for Re-initialization", err = err);
+                    }
+                    if(reinitRequired)
+                    {
+                    newConfig = {url:<string>gateway:consulUrls[consulKey]};
+                    destination_attribute = <string>gateway:consulUrls[consulKey];
+                    gateway:consulurlChanged[consulKey] = false;
+                    {{qualifiedServiceName}}_prod.init(newConfig);
+                    }
                     }
                 {{/equals}}
                     clientResponse = {{qualifiedServiceName}}_prod->forward(urlPostfix, req);
@@ -158,22 +179,22 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
         {{^endpointConfig.prodEndpoints}}
             if("SANDBOX" == runtime:getInvocationContext().attributes["KEY_TYPE"]) {
                 destination_attribute = "{{endpointConfig.sandEndpoints.endpoints.0.endpointUrl}}";
-            {{#equals etcd.etcdEnabled "true"}}
-                etcdKey = gateway:retrieveConfig("{{api.name}}.{{api.version}}.sand.etcd.key", "");
-                if(etcdKey != "" && gateway:etcdConnectionEstablished)
+            {{#equals serviceDiscovery.consul.consulEnabled "true"}}
+                consulKey = gateway:retrieveConfig("{{api.name}}.{{api.version}}.sand.consul.key", "");
+                if(consulKey != "")
                 {
-                    hasUrlChanged = <boolean>gateway:urlChanged[etcdKey];
-                    match hasUrlChanged{
-                        boolean matchUrlChanged => reinitRequired=matchUrlChanged;
-                        error err => log:printError("Error in checking for Re-initialization", err = err);
-                    }
-                    if(reinitRequired)
-                    {
-                        newConfig = {url:<string>gateway:etcdUrls[etcdKey]};
-                        destination_attribute = <string>gateway:etcdUrls[etcdKey];
-                        gateway:urlChanged[etcdKey] = false;
-                        {{qualifiedServiceName}}_sand.init(newConfig);
-                    }
+                hasUrlChanged = <boolean>gateway:consulurlChanged[consulKey];
+                match hasUrlChanged{
+                boolean matchUrlChanged => reinitRequired=matchUrlChanged;
+                error err => log:printError("Error in checking for Re-initialization", err = err);
+                }
+                if(reinitRequired)
+                {
+                newConfig = {url:<string>gateway:consulUrls[consulKey]};
+                destination_attribute = <string>gateway:consulUrls[consulKey];
+                gateway:consulurlChanged[consulKey] = false;
+                {{qualifiedServiceName}}_sand.init(newConfig);
+                }
                 }
             {{/equals}}
                 clientResponse = {{qualifiedServiceName}}_sand->forward(urlPostfix, req);

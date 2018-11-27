@@ -37,12 +37,7 @@ import org.wso2.apimgt.gateway.cli.exception.CliLauncherException;
 import org.wso2.apimgt.gateway.cli.exception.ConfigParserException;
 import org.wso2.apimgt.gateway.cli.exception.HashingException;
 import org.wso2.apimgt.gateway.cli.hashing.HashUtils;
-import org.wso2.apimgt.gateway.cli.model.config.Client;
-import org.wso2.apimgt.gateway.cli.model.config.Config;
-import org.wso2.apimgt.gateway.cli.model.config.ContainerConfig;
-import org.wso2.apimgt.gateway.cli.model.config.Token;
-import org.wso2.apimgt.gateway.cli.model.config.TokenBuilder;
-import org.wso2.apimgt.gateway.cli.model.config.Etcd;
+import org.wso2.apimgt.gateway.cli.model.config.*;
 import org.wso2.apimgt.gateway.cli.model.rest.ext.ExtendedAPI;
 import org.wso2.apimgt.gateway.cli.model.rest.policy.ApplicationThrottlePolicyDTO;
 import org.wso2.apimgt.gateway.cli.model.rest.policy.SubscriptionThrottlePolicyDTO;
@@ -122,6 +117,9 @@ public class SetupCmd implements GatewayLauncherCmd {
 
     @Parameter(names = { "-etcd", "--etcd-enable" }, hidden = true, arity = 0)
     private boolean isEtcd;
+
+    @Parameter(names = { "-consul", "--consul-enable" }, hidden = true, arity = 0)
+    private boolean isConsul;
 
     private String publisherEndpoint;
     private String adminEndpoint;
@@ -299,7 +297,22 @@ public class SetupCmd implements GatewayLauncherCmd {
         //set etcd requirement
         Etcd etcd = new Etcd();
         etcd.setEtcdEnabled(isEtcd);
-        GatewayCmdUtils.setEtcd(etcd);
+
+        //set consul requirement
+        Consul consul = new Consul();
+        consul.setConsulEnabled(isConsul);
+
+        //set service discovery requirements
+        ServiceDiscovery serviceDiscovery = new ServiceDiscovery();
+        serviceDiscovery.setEtcd(etcd);
+        serviceDiscovery.setConsul(consul);
+
+        if(isEtcd || isConsul)
+        {
+            serviceDiscovery.setEnabled(true);
+        }
+
+        GatewayCmdUtils.setServiceDiscovery(serviceDiscovery);
 
         ThrottlePolicyGenerator policyGenerator = new ThrottlePolicyGenerator();
         CodeGenerator codeGenerator = new CodeGenerator();
