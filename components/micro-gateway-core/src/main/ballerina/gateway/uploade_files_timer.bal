@@ -42,7 +42,7 @@ function searchFilesToUpload() returns (error?) {
             } else {
                 printError(KEY_UPLOAD_TASK, "Error occurred while uploading the file");
             }
-            cnt++;
+            cnt += 1;
         }
     }
     if (cnt == 0) {

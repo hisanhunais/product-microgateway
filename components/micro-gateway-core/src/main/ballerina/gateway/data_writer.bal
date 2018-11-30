@@ -60,8 +60,8 @@ function getEventData(EventDTO dto) returns string {
 
 function writeEventToFile(EventDTO eventDTO) {
     string fileLocation = retrieveConfig(API_USAGE_PATH, API_USAGE_DIR) + PATH_SEPERATOR;
-    io:ByteChannel channel = io:openFile(fileLocation + API_USAGE_FILE, io:APPEND);
-    io:CharacterChannel charChannel = new(channel, "UTF-8");
+    io:WritableByteChannel byteChannel = io:openWritableFile(fileLocation + API_USAGE_FILE);
+    io:WritableCharacterChannel charChannel = new(byteChannel, "UTF-8");
     try {
         match charChannel.write(getEventData(eventDTO), 0) {
             int numberOfCharsWritten => {

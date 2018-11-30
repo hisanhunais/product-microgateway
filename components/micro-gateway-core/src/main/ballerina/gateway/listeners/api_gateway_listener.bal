@@ -70,16 +70,16 @@ public type APIGatewayListener object {
 @Field {value:"filters: Filters to be applied to the request before dispatched to the actual resource"}
 @Field {value:"authProviders: The array of AuthProviders which are used to authenticate the users"}
 public type EndpointConfiguration record {
-    string host,
-    int port =9090,
-    http:KeepAlive keepAlive = "AUTO",
-    http:ServiceSecureSocket? secureSocket,
-    string httpVersion = "1.1",
-    http:RequestLimits? requestLimits,
-    http:Filter[] filters,
-    int timeoutMillis = DEFAULT_LISTENER_TIMEOUT,
-    http:AuthProvider[]? authProviders,
-    boolean isSecured,
+    string host;
+    int port =9090;
+    http:KeepAlive keepAlive = "AUTO";
+    http:ServiceSecureSocket? secureSocket;
+    string httpVersion = "1.1";
+    http:RequestLimits? requestLimits;
+    http:Filter[] filters;
+    int timeoutMillis = DEFAULT_LISTENER_TIMEOUT;
+    http:AuthProvider[]? authProviders;
+    boolean isSecured;
 };
 
 

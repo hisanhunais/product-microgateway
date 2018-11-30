@@ -19,36 +19,31 @@ import ballerina/log;
 import ballerina/auth;
 import ballerina/http;
 
-documentation {
-    Representation of Authentication handler chain. Originally taken from ballerina/http package as the ballarina
-    version 0.981.1 http:AuthnHandlerChain does not validate against all the AuthHandlers in the AuthHandlerRegistry.
-    This implementation is based on the original fix for this issue.
-    See https://github.com/ballerina-platform/ballerina-lang/pull/11139
-    Once the Ballerina version is updated to 0.983.0 or above, we can reuse the http:AuthnHandlerChain
 
-    F{{authHandlerRegistry}} `AuthHandlerRegistry` instance
-}
+#    Representation of Authentication handler chain. Originally taken from ballerina/http package as the ballarina
+#    version 0.981.1 http:AuthnHandlerChain does not validate against all the AuthHandlers in the AuthHandlerRegistry.
+#    This implementation is based on the original fix for this issue.
+#    See https://github.com/ballerina-platform/ballerina-lang/pull/11139
+#    Once the Ballerina version is updated to 0.983.0 or above, we can reuse the http:AuthnHandlerChain
+#    F{{authHandlerRegistry}} `AuthHandlerRegistry` instance
+
 public type AuthnHandlerChain object {
     private http:AuthHandlerRegistry authHandlerRegistry;
 
     public new (authHandlerRegistry) {
     }
 
-    documentation {
-        Tries to authenticate against any one of the available authentication handlers
 
-        P{{req}} `Request` instance
-        R{{}} true if authenticated successfully, else false
-    }
+#        Tries to authenticate against any one of the available authentication handlers
+#        P{{req}} `Request` instance
+#        R{{}} true if authenticated successfully, else false
     public function handle (http:Request req) returns (boolean);
 
-    documentation {
-        Tries to authenticate against a specifc sub set of the authentication handlers, using the given array of auth provider ids
 
-        P{{authProviderIds}} array of auth provider ids
-        P{{req}} `Request` instance
-        R{{}} true if authenticated successfully, else false
-    }
+#        Tries to authenticate against a specifc sub set of the authentication handlers, using the given array of auth provider ids
+#        P{{authProviderIds}} array of auth provider ids
+#        P{{req}} `Request` instance
+#        R{{}} true if authenticated successfully, else false
     public function handleWithSpecificAuthnHandlers (string[] authProviderIds, http:Request req) returns (boolean);
 };
 
