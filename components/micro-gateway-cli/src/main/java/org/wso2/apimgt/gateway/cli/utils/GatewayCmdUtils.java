@@ -33,7 +33,7 @@ import org.wso2.apimgt.gateway.cli.exception.ConfigParserException;
 import org.wso2.apimgt.gateway.cli.model.config.Config;
 import org.wso2.apimgt.gateway.cli.model.config.ContainerConfig;
 import org.wso2.apimgt.gateway.cli.model.rest.APICorsConfigurationDTO;
-import org.wso2.apimgt.gateway.cli.model.config.Etcd;
+import org.wso2.apimgt.gateway.cli.model.config.ServiceDiscovery;
 
 
 import java.io.File;
@@ -55,14 +55,14 @@ public class GatewayCmdUtils {
     private static Config config;
     private static ContainerConfig containerConfig;
     private static CodeGenerationContext codeGenerationContext;
-    private static Etcd etcd;
+    private static ServiceDiscovery serviceDiscovery;
 
-    public static Etcd getEtcd() {
-        return etcd;
+    public static ServiceDiscovery getServiceDiscovery() {
+        return serviceDiscovery;
     }
 
-    public static void setEtcd(Etcd etcd) {
-        GatewayCmdUtils.etcd = etcd;
+    public static void setServiceDiscovery(ServiceDiscovery serviceDiscovery) {
+        GatewayCmdUtils.serviceDiscovery = serviceDiscovery;
     }
 
     public static Config getConfig() {
