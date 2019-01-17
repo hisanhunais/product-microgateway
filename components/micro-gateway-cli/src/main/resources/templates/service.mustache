@@ -79,9 +79,11 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
         http:Response|error clientResponse;
         string destination_attribute;
         runtime:getInvocationContext().attributes["timeStampRequestOut"] = time:currentTime().time;
-        {{#if etcd.etcdEnabled}}boolean reinitRequired;
+        {{#if serviceDiscovery.isEnabled}}boolean reinitRequired;
         string etcdKey;
         string etcdKeyConfigValue;
+            string consulKey;
+            string consulKeyConfigValue;
         boolean|error hasUrlChanged;
         http:ClientEndpointConfig newConfig;
         boolean reinitFailed = false;
@@ -90,8 +92,10 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
             {{#endpointConfig.sandEndpoints}}
                 if("PRODUCTION" == runtime:getInvocationContext().attributes["KEY_TYPE"]) {
                     destination_attribute = "{{endpointConfig.prodEndpoints.endpoints.0.endpointUrl}}";
-                {{#if etcd.etcdEnabled}}
+                {{#if serviceDiscovery.etcd.etcdEnabled}}
                     {{>prodEndpointReinit}}
+                {{else if serviceDiscovery.consul.consulEnabled}}
+                    {{>prodEndpointReinit2}}
                 {{else}}
                     clientResponse = {{qualifiedServiceName}}_prod->forward(urlPostfix, req);
                     runtime:getInvocationContext().attributes["destination"] = destination_attribute;
@@ -100,6 +104,8 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
                     destination_attribute = "{{endpointConfig.sandEndpoints.endpoints.0.endpointUrl}}";
                 {{#if etcd.etcdEnabled}}
                     {{>sandEndpointReinit}}
+                {{else if serviceDiscovery.consul.consulEnabled}}
+                    {{>sandEndpointReinit2}}
                 {{else}}
                     clientResponse = {{qualifiedServiceName}}_sand->forward(urlPostfix, req);
                     runtime:getInvocationContext().attributes["destination"] = destination_attribute;
@@ -111,6 +117,8 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
                     destination_attribute = "{{endpointConfig.prodEndpoints.endpoints.0.endpointUrl}}";
                 {{#if etcd.etcdEnabled}}
                     {{>prodEndpointReinit}}
+                {{else if serviceDiscovery.consul.consulEnabled}}
+                    {{>prodEndpointReinit2}}
                 {{else}}
                     clientResponse = {{qualifiedServiceName}}_prod->forward(urlPostfix, req);
                     runtime:getInvocationContext().attributes["destination"] = destination_attribute;
@@ -133,6 +141,8 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
                 destination_attribute = "{{endpointConfig.sandEndpoints.endpoints.0.endpointUrl}}";
             {{#if etcd.etcdEnabled}}
                 {{>sandEndpointReinit}}
+            {{else if serviceDiscovery.consul.consulEnabled}}
+                {{>sandEndpointReinit2}}
             {{else}}
                 clientResponse = {{qualifiedServiceName}}_sand->forward(urlPostfix, req);
                 runtime:getInvocationContext().attributes["destination"] = destination_attribute;

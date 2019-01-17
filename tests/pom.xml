@@ -137,14 +137,14 @@
                 <artifactId>docker-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>start-docker-for-etcd</id>
+                        <id>start-docker-for-etcd-and-consul</id>
                         <phase>pre-integration-test</phase>
                         <goals>
                             <goal>start</goal>
                         </goals>
                     </execution>
                     <execution>
-                        <id>stop-docker-for-etcd</id>
+                        <id>stop-docker-for-etcd-and-consul</id>
                         <phase>post-integration-test</phase>
                         <goals>
                             <goal>stop</goal>
@@ -163,13 +163,23 @@
                                     <exec>
                                         <arg>/usr/local/bin/etcd</arg>
                                         <arg>--advertise-client-urls</arg>
-                                        <arg>http://127.0.0.10:2379</arg>
+                                        <arg>http://127.0.0.1:2379</arg>
                                         <arg>--listen-client-urls</arg>
                                         <arg>http://0.0.0.0:2379</arg>
                                     </exec>
                                 </cmd>
                                 <ports>
                                     <port>2379:2379</port>
+                                </ports>
+                            </run>
+                        </image>
+                        <image>
+                            <alias>mgw-consul</alias>
+                            <name>consul:latest</name>
+                            <run>
+                                <namingStrategy>alias</namingStrategy>
+                                <ports>
+                                    <port>8500:8500</port>
                                 </ports>
                             </run>
                         </image>
@@ -200,8 +210,10 @@
                 </executions>
                 <configuration>
                     <environmentVariables>
-                        <ETCD_HOST>127.0.0.10</ETCD_HOST>
+                        <ETCD_HOST>127.0.0.1</ETCD_HOST>
                         <PORT>2379</PORT>
+                        <ETCD_HOST>127.0.0.1</ETCD_HOST>
+                        <PORT>8500</PORT>
                     </environmentVariables>
                     <systemPropertyVariables>
                         <server.zip>

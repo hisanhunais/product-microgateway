@@ -25,11 +25,11 @@ import org.wso2.apimgt.gateway.cli.constants.GatewayCliConstants;
 import org.wso2.apimgt.gateway.cli.exception.BallerinaServiceGenException;
 import org.wso2.apimgt.gateway.cli.model.config.Config;
 import org.wso2.apimgt.gateway.cli.model.config.ContainerConfig;
+import org.wso2.apimgt.gateway.cli.model.config.ServiceDiscovery;
 import org.wso2.apimgt.gateway.cli.model.rest.EndpointConfig;
 import org.wso2.apimgt.gateway.cli.model.rest.ext.ExtendedAPI;
 import org.wso2.apimgt.gateway.cli.utils.CodegenUtils;
 import org.wso2.apimgt.gateway.cli.utils.GatewayCmdUtils;
-import org.wso2.apimgt.gateway.cli.model.config.Etcd;
 
 import java.util.AbstractMap;
 import java.util.LinkedHashSet;
@@ -56,7 +56,7 @@ public class BallerinaService implements BallerinaSwaggerObject<BallerinaService
     private Set<Map.Entry<String, String>> security = null;
     private List<Tag> tags = null;
     private Set<Map.Entry<String, BallerinaPath>> paths = null;
-    private Etcd etcd;
+    private ServiceDiscovery serviceDiscovery;
 
     /**
      * Build a {@link BallerinaService} object from a {@link Swagger} object.
@@ -74,7 +74,7 @@ public class BallerinaService implements BallerinaSwaggerObject<BallerinaService
         this.tags = swagger.getTags();
         this.containerConfig = GatewayCmdUtils.getContainerConfig();
         this.config = GatewayCmdUtils.getConfig();
-        this.etcd = GatewayCmdUtils.getEtcd();
+        this.serviceDiscovery = GatewayCmdUtils.getServiceDiscovery();
         setPaths(swagger);
         return this;
     }

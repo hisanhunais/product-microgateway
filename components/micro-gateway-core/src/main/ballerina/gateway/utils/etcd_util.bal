@@ -131,7 +131,7 @@ public function establishEtcdConnection()
     printDebug(KEY_ETCD_UTIL, "Establishing Etcd Connection");
     string etcdurl = retrieveConfig("etcdurl", "");
     if(etcdurl != ""){
-        printDebug(KEY_ETCD_UTIL, "etcdurl CLI parameter has not been provided");
+        printDebug(KEY_ETCD_UTIL, "etcdurl CLI parameter has been provided");
         etcdAuthenticate();
     } else {
         printError(KEY_ETCD_UTIL, "Etcd URL not provided");
