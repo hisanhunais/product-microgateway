@@ -26,8 +26,8 @@ import ballerina/internal;
 import ballerina/system;
 
 public map consulUrls;
-public map consulurlChanged;
-map consuldefaultUrls;
+public map consulUrlChanged;
+map consulDefaultUrls;
 string consulToken;
 boolean consulPeriodicQueryInitialized = false;
 public boolean consulConnectionEstablished = true;
@@ -63,7 +63,7 @@ public function consulTimerTask() returns error? {io:println("here3");
             if(currentUrl != fetchedUrl)
             {
                 consulUrls[<string>k] = fetchedUrl;
-                consulurlChanged[<string>k] = true;
+                consulUrlChanged[<string>k] = true;
             }
         }
         io:println(consulUrls);
@@ -111,8 +111,8 @@ public function consulSetup(string key, string etcdConfigKey, string default) re
         else
         {
             printDebug(KEY_CONSUL_UTIL, "Consul Key provided for: " + key);
-            consuldefaultUrls[etcdKey] = retrieveConfig(key, default);
-            consulurlChanged[etcdKey] = false;
+            consulDefaultUrls[etcdKey] = retrieveConfig(key, default);
+            consulUrlChanged[etcdKey] = false;
             consulUrls[etcdKey] = consulLookup(etcdKey);
             endpointUrl = <string>consulUrls[etcdKey];
         }
@@ -162,7 +162,7 @@ public function consulLookup(string key) returns string
             var msg = resp.getJsonPayload();
             match msg {
                 json jsonPayload => {
-                    printDebug(KEY_CONSUL_UTIL, "etcd responded with a payload");
+                    printDebug(KEY_CONSUL_UTIL, "consul responded with a payload");
                     var payloadValue = <string>jsonPayload[0].Value;
                     match payloadValue {
                         string matchedValue => base64EncodedValue = matchedValue;
@@ -190,12 +190,11 @@ public function consulLookup(string key) returns string
             printError(KEY_CONSUL_UTIL, err.message);
         }
     }
-
     if(valueNotFound){
-        printDebug(KEY_CONSUL_UTIL, "value not found at etcd");
-        endpointUrl = <string>defaultUrls[key];
+        printInfo(KEY_CONSUL_UTIL, "value not found at consul");
+        endpointUrl = <string>consulDefaultUrls[key];
     } else {
-        printDebug(KEY_CONSUL_UTIL, "value found at etcd");
+        printInfo(KEY_CONSUL_UTIL, "value found at consul");
         endpointUrl = decodeValueToBase10(base64EncodedValue);
     }
     return endpointUrl;

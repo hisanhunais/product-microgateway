@@ -120,6 +120,11 @@
             <artifactId>org.wso2.micro.gateway.cli</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.ecwid.consul</groupId>
+            <artifactId>consul-api</artifactId>
+            <version>1.4.2</version>
+        </dependency>
 
     </dependencies>
 
@@ -178,9 +183,23 @@
                             <name>consul:latest</name>
                             <run>
                                 <namingStrategy>alias</namingStrategy>
+                                <cmd>
+                                    <exec>
+                                        <arg>agent</arg>
+                                        <arg>-dev</arg>
+                                        <arg>-client</arg>
+                                        <arg>0.0.0.0</arg>
+                                        <arg>-config-file=/etc/consul-config.json</arg>
+                                    </exec>
+                                </cmd>
                                 <ports>
                                     <port>8500:8500</port>
                                 </ports>
+                                <volumes>
+                                    <bind>
+                                        <volume>${basedir}/resources/consul-config.json:/etc/consul-config.json</volume>
+                                    </bind>
+                                </volumes>
                             </run>
                         </image>
                     </images>
@@ -212,8 +231,8 @@
                     <environmentVariables>
                         <ETCD_HOST>127.0.0.1</ETCD_HOST>
                         <PORT>2379</PORT>
-                        <ETCD_HOST>127.0.0.1</ETCD_HOST>
-                        <PORT>8500</PORT>
+                        <CONSUL_HOST>${docker.container.mgw-consul.ip}</CONSUL_HOST>
+                        <CONSUL_PORT>8500</CONSUL_PORT>
                     </environmentVariables>
                     <systemPropertyVariables>
                         <server.zip>
@@ -263,7 +282,6 @@
                     <suiteXmlFiles>
                         <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
-                    <skip>true</skip>
                 </configuration>
             </plugin>
         </plugins>

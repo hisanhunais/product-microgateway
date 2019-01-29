@@ -30,6 +30,7 @@
     <test name="micro-gw-services1" preserve-order="true" parallel="false">
         <classes>
             <class name="org.wso2.micro.gateway.tests.serviceDiscovery.EtcdSupportTestCase"/>
+            <class name="org.wso2.micro.gateway.tests.serviceDiscovery.ConsulSupportTestCase"/>
         </classes>
     </test>
 
