@@ -128,6 +128,7 @@ public class SetupCmd implements GatewayLauncherCmd {
     @Parameter(names = {"-b", "--security"}, hidden = true)
     private String security;
 
+    @SuppressWarnings("unused")
     @Parameter(names = { "-etcd", "--enable-etcd" }, hidden = true, arity = 0)
     private boolean isEtcdEnabled;
 
