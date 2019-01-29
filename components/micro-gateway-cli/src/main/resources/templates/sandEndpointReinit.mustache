@@ -10,10 +10,10 @@ etcdKey = gateway:retrieveConfig(etcdKeyConfigValue, "");
                             destination_attribute = <string>gateway:etcdUrls[etcdKey];
                             try {
                                 {{qualifiedServiceName}}_sand.init(newConfig);
-                                gateway:urlChanged[etcdKey] = false;
-                            } catch (error err) {
+                                gateway:etcdUrlChanged[etcdKey] = false;
+                            }catch(error err){
                                 reinitFailed = true;
-                                gateway:urlChanged[etcdKey] = true;
+                                gateway:etcdUrlChanged[etcdKey] = true;
 
                                 http:Response res = new;
                                 res.statusCode = 500;

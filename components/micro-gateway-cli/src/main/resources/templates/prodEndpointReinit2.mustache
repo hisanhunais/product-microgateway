@@ -1,20 +1,20 @@
-consulKeyConfigValue = apiId + "_prod_etcdKey";
-consulKey = gateway:retrieveConfig(consulKeyConfigValue, "");
-if(consulKey != "" && gateway:consulConnectionEstablished){
-hasUrlChanged = <boolean>gateway:consulurlChanged[consulKey];
+//consulKeyConfigValue = apiId + "_prod_consulKey";
+key = gateway:retrieveConfig(keyConfigValue, "");
+if(key != "" && connectionEstablished){
+hasUrlChanged = <boolean>urlChanged[key];
     match hasUrlChanged{
     boolean matchUrlChanged => reinitRequired = matchUrlChanged;
     error err => log:printError("Error in checking for Re-initialization", err = err);
     }
     if(reinitRequired){
-    newConfig = {url:<string>gateway:consulUrls[consulKey]};
-        destination_attribute = <string>gateway:consulUrls[consulKey];
+    newConfig = {url:<string>urls[key]};
+        destination_attribute = <string>urls[key];
             try{
             {{qualifiedServiceName}}_prod.init(newConfig);
-            gateway:consulurlChanged[consulKey] = false;
+            urlChanged[key] = false;
             }catch(error err){
             reinitFailed = true;
-            gateway:consulurlChanged[consulKey] = true;
+            urlChanged[key] = true;
 
             http:Response res = new;
             res.statusCode = 500;
@@ -22,13 +22,13 @@ hasUrlChanged = <boolean>gateway:consulurlChanged[consulKey];
             "fault": {
             "code": "101505",
             "message": "Runtime Error",
-            "description": "URL defined at consul for key " + config:getAsString(consulKeyConfigValue) + " is invalid"
+            "description": "URL defined for key " + config:getAsString(keyConfigValue) + " is invalid"
             }
             };
             runtime:getInvocationContext().attributes["error_code"] = "101505";
             res.setPayload(payload);
             clientResponse = res;
-            log:printError("URL defined at consul for key " + config:getAsString(consulKeyConfigValue) + " is invalid");
+            log:printError("URL defined for key " + config:getAsString(keyConfigValue) + " is invalid");
             }
             }
             }

@@ -26,8 +26,8 @@ import ballerina/internal;
 import ballerina/system;
 
 public map etcdUrls;
-public map urlChanged;
-map defaultUrls;
+public map etcdUrlChanged;
+map etcdDefaultUrls;
 string etcdToken;
 boolean etcdPeriodicQueryInitialized = false;
 public boolean etcdConnectionEstablished = false;
@@ -60,7 +60,7 @@ public function etcdTimerTask() returns error? {
 
             if (currentUrl != fetchedUrl) {
                 etcdUrls[<string>key] = fetchedUrl;
-                urlChanged[<string>key] = true;
+                etcdUrlChanged[<string>key] = true;
             }
             printDebug(KEY_ETCD_UTIL, key + " : " + <string>etcdUrls[<string>key]);
         }
@@ -102,8 +102,8 @@ public function etcdSetup(string key, string etcdConfigKey, string default) retu
         }
         else {
             printDebug(KEY_ETCD_UTIL, "Etcd Key provided for: " + key);
-            defaultUrls[etcdKey] = retrieveConfig(key, default);
-            urlChanged[etcdKey] = false;
+            etcdDefaultUrls[etcdKey] = retrieveConfig(key, default);
+            etcdUrlChanged[etcdKey] = false;
             etcdUrls[etcdKey] = etcdLookup(etcdKey);
             endpointUrl = <string>etcdUrls[etcdKey];
         }
@@ -170,7 +170,7 @@ public function etcdLookup(string base10EncodedKey) returns string {
 
     if (valueNotFound) {
         printDebug(KEY_ETCD_UTIL, "value not found at etcd");
-        endpointUrl = <string>defaultUrls[base10EncodedKey];
+        endpointUrl = <string>etcdDefaultUrls[base10EncodedKey];
     } else {
         printDebug(KEY_ETCD_UTIL, "value found at etcd");
         endpointUrl = decodeValueToBase10(base64EncodedValue);

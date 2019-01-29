@@ -84,18 +84,33 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
         string etcdKeyConfigValue;
             string consulKey;
             string consulKeyConfigValue;
+        string keyConfigValue;
+        string key;
         boolean|error hasUrlChanged;
         http:ClientEndpointConfig newConfig;
         boolean reinitFailed = false;
-        string apiId = "{{api.id}}";{{/if}}
+        string apiId = "{{api.id}}";
+            {{#if serviceDiscovery.etcd.etcdEnabled}}
+                boolean connectionEstablished = gateway:etcdConnectionEstablished;
+                map urlChanged = gateway:etcdUrlChanged;
+                map urls = gateway:etcdUrls;
+            {{else if serviceDiscovery.consul.consulEnabled}}
+                boolean connectionEstablished = gateway:consulConnectionEstablished;
+                map urlChanged = gateway:consulUrlChanged;
+                map urls = gateway:consulUrls;
+            {{/if}}
+        {{/if}}
+
+
         {{#endpointConfig.prodEndpoints}}
             {{#endpointConfig.sandEndpoints}}
                 if("PRODUCTION" == runtime:getInvocationContext().attributes["KEY_TYPE"]) {
                     destination_attribute = "{{endpointConfig.prodEndpoints.endpoints.0.endpointUrl}}";
                 {{#if serviceDiscovery.etcd.etcdEnabled}}
-                    etcdKeyConfigValue = apiId + "_prod_etcdKey";
+                    keyConfigValue = apiId + "_prod_etcdKey";
                     {{>prodEndpointReinit}}
                 {{else if serviceDiscovery.consul.consulEnabled}}
+                    keyConfigValue = apiId + "_prod_consulKey";
                     {{>prodEndpointReinit2}}
                 {{else}}
                     clientResponse = {{qualifiedServiceName}}_prod->forward(urlPostfix, req);
@@ -103,10 +118,11 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
                 {{/if}}
                 } else {
                     destination_attribute = "{{endpointConfig.sandEndpoints.endpoints.0.endpointUrl}}";
-                {{#if etcd.etcdEnabled}}
-                    etcdKeyConfigValue = apiId + "_sand_etcdKey";
+                {{#if serviceDiscovery.etcd.etcdEnabled}}
+                    keyConfigValue = apiId + "_sand_etcdKey";
                     {{>sandEndpointReinit}}
                 {{else if serviceDiscovery.consul.consulEnabled}}
+                    keyConfigValue = apiId + "_sand_consulKey";
                     {{>sandEndpointReinit2}}
                 {{else}}
                     clientResponse = {{qualifiedServiceName}}_sand->forward(urlPostfix, req);
@@ -117,10 +133,11 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
             {{^endpointConfig.sandEndpoints}}
                 if("PRODUCTION" == runtime:getInvocationContext().attributes["KEY_TYPE"]) {
                     destination_attribute = "{{endpointConfig.prodEndpoints.endpoints.0.endpointUrl}}";
-                {{#if etcd.etcdEnabled}}
-                    etcdKeyConfigValue = apiId + "_prod_etcdKey";
+                {{#if serviceDiscovery.etcd.etcdEnabled}}
+                    keyConfigValue = apiId + "_prod_etcdKey";
                     {{>prodEndpointReinit}}
                 {{else if serviceDiscovery.consul.consulEnabled}}
+                    keyConfigValue = apiId + "_prod_consulKey";
                     {{>prodEndpointReinit2}}
                 {{else}}
                     clientResponse = {{qualifiedServiceName}}_prod->forward(urlPostfix, req);
@@ -142,10 +159,11 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
         {{^endpointConfig.prodEndpoints}}
             if("SANDBOX" == runtime:getInvocationContext().attributes["KEY_TYPE"]) {
                 destination_attribute = "{{endpointConfig.sandEndpoints.endpoints.0.endpointUrl}}";
-            {{#if etcd.etcdEnabled}}
-                etcdKeyConfigValue = apiId + "_sand_etcdKey";
+            {{#if serviceDiscovery.etcd.etcdEnabled}}
+                keyConfigValue = apiId + "_sand_etcdKey";
                 {{>sandEndpointReinit}}
             {{else if serviceDiscovery.consul.consulEnabled}}
+                keyConfigValue = apiId + "_sand_consulKey";
                 {{>sandEndpointReinit2}}
             {{else}}
                 clientResponse = {{qualifiedServiceName}}_sand->forward(urlPostfix, req);
