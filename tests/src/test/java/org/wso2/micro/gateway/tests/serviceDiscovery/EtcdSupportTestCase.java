@@ -17,7 +17,6 @@
  */
 package org.wso2.micro.gateway.tests.serviceDiscovery;
 
-import io.netty.handler.codec.http.HttpHeaderNames;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -33,13 +32,10 @@ import org.wso2.micro.gateway.tests.common.model.ApplicationDTO;
 import org.wso2.micro.gateway.tests.context.ServerInstance;
 import org.wso2.micro.gateway.tests.context.Utils;
 import org.wso2.micro.gateway.tests.util.EtcdClient;
-import org.wso2.micro.gateway.tests.util.HttpClientRequest;
 import org.wso2.micro.gateway.tests.util.HttpResponse;
 import org.wso2.micro.gateway.tests.util.TestConstant;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 public class EtcdSupportTestCase extends BaseTestCase {
     private String jwtTokenProd, jwtTokenSand, balPath, configPath;
@@ -65,7 +61,7 @@ public class EtcdSupportTestCase extends BaseTestCase {
     private String base64EncodedPizzaShackProdNewValue;
     private String base64EncodedPizzaShackSandNewValue;
     private String servicePath = "/pizzashack/1.0.0/menu";
-    private final static String INVALID_URL_AT_ETCD_RESPONSE = "{\"fault\":{\"code\":\"101505\", \"message\":\"Runtime Error\", \"description\":\"URL defined at etcd for key pizzashackprod is invalid\"}}";
+    private final static String INVALID_URL_AT_ETCD_RESPONSE = "{\"fault\":{\"code\":\"101503\", \"message\":\"Runtime Error\", \"description\":\"URL defined at etcd for key pizzashackprod is invalid\"}}";
     private EtcdClient etcdClient;
     private boolean etcdAuthenticationEnabled = true;
 

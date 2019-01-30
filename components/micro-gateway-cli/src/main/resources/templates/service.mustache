@@ -80,25 +80,22 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
         string destination_attribute;
         runtime:getInvocationContext().attributes["timeStampRequestOut"] = time:currentTime().time;
         {{#if serviceDiscovery.isEnabled}}boolean reinitRequired;
-        string etcdKey;
-        string etcdKeyConfigValue;
-            string consulKey;
-            string consulKeyConfigValue;
+        string serviceDiscoveryTool;
         string keyConfigValue;
         string key;
         boolean|error hasUrlChanged;
         http:ClientEndpointConfig newConfig;
         boolean reinitFailed = false;
         string apiId = "{{api.id}}";
-            {{#if serviceDiscovery.etcd.etcdEnabled}}
-                boolean connectionEstablished = gateway:etcdConnectionEstablished;
-                map urlChanged = gateway:etcdUrlChanged;
-                map urls = gateway:etcdUrls;
-            {{else if serviceDiscovery.consul.consulEnabled}}
-                boolean connectionEstablished = gateway:consulConnectionEstablished;
-                map urlChanged = gateway:consulUrlChanged;
-                map urls = gateway:consulUrls;
-            {{/if}}
+        {{#if serviceDiscovery.etcd.etcdEnabled}}serviceDiscoveryTool = "etcd";
+        boolean connectionEstablished = gateway:etcdConnectionEstablished;
+        map urlChanged = gateway:etcdUrlChanged;
+        map urls = gateway:etcdUrls;
+        {{else if serviceDiscovery.consul.consulEnabled}}serviceDiscoveryTool = "consul";
+        boolean connectionEstablished = gateway:consulConnectionEstablished;
+        map urlChanged = gateway:consulUrlChanged;
+        map urls = gateway:consulUrls;
+        {{/if}}
         {{/if}}
 
 
@@ -111,7 +108,7 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
                     {{>prodEndpointReinit}}
                 {{else if serviceDiscovery.consul.consulEnabled}}
                     keyConfigValue = apiId + "_prod_consulKey";
-                    {{>prodEndpointReinit2}}
+                    {{>prodEndpointReinit}}
                 {{else}}
                     clientResponse = {{qualifiedServiceName}}_prod->forward(urlPostfix, req);
                     runtime:getInvocationContext().attributes["destination"] = destination_attribute;
@@ -123,7 +120,7 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
                     {{>sandEndpointReinit}}
                 {{else if serviceDiscovery.consul.consulEnabled}}
                     keyConfigValue = apiId + "_sand_consulKey";
-                    {{>sandEndpointReinit2}}
+                    {{>sandEndpointReinit}}
                 {{else}}
                     clientResponse = {{qualifiedServiceName}}_sand->forward(urlPostfix, req);
                     runtime:getInvocationContext().attributes["destination"] = destination_attribute;
@@ -138,7 +135,7 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
                     {{>prodEndpointReinit}}
                 {{else if serviceDiscovery.consul.consulEnabled}}
                     keyConfigValue = apiId + "_prod_consulKey";
-                    {{>prodEndpointReinit2}}
+                    {{>prodEndpointReinit}}
                 {{else}}
                     clientResponse = {{qualifiedServiceName}}_prod->forward(urlPostfix, req);
                     runtime:getInvocationContext().attributes["destination"] = destination_attribute;
@@ -164,7 +161,7 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
                 {{>sandEndpointReinit}}
             {{else if serviceDiscovery.consul.consulEnabled}}
                 keyConfigValue = apiId + "_sand_consulKey";
-                {{>sandEndpointReinit2}}
+                {{>sandEndpointReinit}}
             {{else}}
                 clientResponse = {{qualifiedServiceName}}_sand->forward(urlPostfix, req);
                 runtime:getInvocationContext().attributes["destination"] = destination_attribute;

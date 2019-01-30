@@ -36,13 +36,11 @@ boolean consulcredentialsProvided = false;
 boolean consulAuthenticationEnabled = true;
 task:Timer? consulTimer;
 string consulKVBasePath = "/v1/kv/";
-string consulAuthBasePath = "/v1/auth";
 
-@Description {value:"Setting up etcd timer task"}
-public function initiateConsulTimerTask()
-{
+@Description {value:"Setting up consul timer task"}
+public function initiateConsulTimerTask() {
     printDebug(KEY_CONSUL_UTIL, "initiateConsulTimerTask Called");
-    int consulTriggerTime = config:getAsInt("consultimer", default = DEFAULT_ETCD_TRIGGER_TIME);
+    int consulTriggerTime = config:getAsInt("consultimer", default = DEFAULT_SERVICE_DISCOVERY_TRIGGER_TIME);
     (function() returns error?) onTriggerFunction = consulTimerTask;
     function(error) onErrorFunction = consulError;
     consulTimer = new task:Timer(onTriggerFunction, onErrorFunction, consulTriggerTime, delay = 1000);
@@ -50,26 +48,21 @@ public function initiateConsulTimerTask()
     printInfo(KEY_CONSUL_UTIL, "Consul periodic timer task started with a periodic time of " + <string>consulTriggerTime + "ms");
 }
 
-@Description {value:"Periodic Etcd Query. Trigger function of etcd timer task"}
-public function consulTimerTask() returns error? {io:println("here3");
-    printDebug(KEY_CONSUL_UTIL, "Etcd Periodic Query Initiated");
-    if(consulUrls.count() > 0)
-    {
-        foreach k, v in consulUrls {
+@Description {value:"Periodic consul Query. Trigger function of consul timer task"}
+public function consulTimerTask() returns error? {
+    printDebug(KEY_CONSUL_UTIL, "Consul Periodic Query Initiated");
+    if (consulUrls.count() > 0) {
+        foreach key, value in consulUrls {
 
-            string currentUrl = <string>v;
-            string fetchedUrl = consulLookup(<string>k);
+            string currentUrl = <string>value;
+            string fetchedUrl = consulLookup(<string>key);
 
-            if(currentUrl != fetchedUrl)
-            {
-                consulUrls[<string>k] = fetchedUrl;
-                consulUrlChanged[<string>k] = true;
+            if (currentUrl != fetchedUrl) {
+                consulUrls[<string>key] = fetchedUrl;
+                consulUrlChanged[<string>key] = true;
             }
         }
-        io:println(consulUrls);
-    }
-    else
-    {
+    } else {
         printInfo(KEY_CONSUL_UTIL, "No Consul keys provided. Stopping consul periodic call");
         consulTimer.stop();
     }
@@ -77,71 +70,59 @@ public function consulTimerTask() returns error? {io:println("here3");
     return ();
 }
 
-@Description {value:"Error function of etcd timer task"}
+@Description {value:"Error function of consul timer task"}
 public function consulError(error e) {
     printError(KEY_CONSUL_UTIL, "Consul Timer Task failed");
 }
 
-@Description {value:"Setting up etcd requirements"}
-public function consulSetup(string key, string etcdConfigKey, string default) returns string
-{
+@Description {value:"Setting up consul requirements"}
+public function consulSetup(string key, string consulConfigKey, string default) returns string {
     string endpointUrl;
 
-    if(!consulConnectionAttempted)
-    {
+    if (!consulConnectionAttempted) {
         establishConsulConnection();
         consulConnectionAttempted = true;
-        printDebug(KEY_CONSUL_UTIL, "Etcd Connection Attempted");
+        printDebug(KEY_CONSUL_UTIL, "Consul Connection Attempted");
     }
 
-    if(consulConnectionEstablished)
-    {
-        if(!consulPeriodicQueryInitialized)
-        {
+    if (consulConnectionEstablished) {
+        if (!consulPeriodicQueryInitialized) {
             consulPeriodicQueryInitialized = true;
             initiateConsulTimerTask();
         }
-        string etcdKey = retrieveConfig(etcdConfigKey, "");
+        string consulKey = retrieveConfig(consulConfigKey, "");
 
-        if(etcdKey == "")
-        {
+        if (consulKey == "") {
             printInfo(KEY_CONSUL_UTIL, "Consul Key not provided for: " + key);
             endpointUrl = retrieveConfig(key, default);
-        }
-        else
-        {
+        } else {
             printDebug(KEY_CONSUL_UTIL, "Consul Key provided for: " + key);
-            consulDefaultUrls[etcdKey] = retrieveConfig(key, default);
-            consulUrlChanged[etcdKey] = false;
-            consulUrls[etcdKey] = consulLookup(etcdKey);
-            endpointUrl = <string>consulUrls[etcdKey];
+            consulDefaultUrls[consulKey] = retrieveConfig(key, default);
+            consulUrlChanged[consulKey] = false;
+            consulUrls[consulKey] = consulLookup(consulKey);
+            endpointUrl = <string>consulUrls[consulKey];
         }
-    }
-    else
-    {   io:println("here5");
+    } else {
         endpointUrl = retrieveConfig(key, default);
     }
-    io:println(endpointUrl);
     return endpointUrl;
 }
 
-@Description {value:"Establish etcd connection by authenticating etcd"}
-public function establishConsulConnection()
-{
+@Description {value:"Establish consul connection by authenticating consul"}
+public function establishConsulConnection() {
     printDebug(KEY_CONSUL_UTIL, "Establishing Consul Connection");
     string consulurl = retrieveConfig("consulurl", "");
-    if(consulurl != ""){
-        printDebug(KEY_CONSUL_UTIL, "etcdurl CLI parameter has been provided");
+    if (consulurl != "") {
+        printDebug(KEY_CONSUL_UTIL, "consulurl CLI parameter has been provided");
         string sample = consulLookup("sample");
     } else {
-        printError(KEY_CONSUL_UTIL, "Etcd URL not provided");
+        printError(KEY_CONSUL_UTIL, "consulurl CLI parameter has not been provided");
         consulConnectionEstablished = false;
     }
 }
 
-@Description {value:"Query etcd passing the key and retrieves value"}
-public function consulLookup(string key) returns string
-{
+@Description {value:"Query consul passing the key and retrieves value"}
+public function consulLookup(string key) returns string {
     string endpointUrl;
     string base64EncodedValue;
     http:Request req;
@@ -149,8 +130,7 @@ public function consulLookup(string key) returns string
     string requestPath = consulKVBasePath + key;
     string token = retrieveConfig("token", "");
 
-    if(token != "")
-    {
+    if (token != "") {
         req.setHeader("X-Consul-Token", token);
         printDebug(KEY_CONSUL_UTIL, "Adding consul token to request header");
     }
@@ -171,13 +151,12 @@ public function consulLookup(string key) returns string
                 }
                 error err => {
                     valueNotFound = true;
-                    if(resp.statusCode == 403){
+                    if (resp.statusCode == 403) {
                         printError(KEY_CONSUL_UTIL, "Permission denied. Invalid token");
                         consulConnectionEstablished = false;
-                    }else if (resp.statusCode == 404){
+                    } else if (resp.statusCode == 404) {
                         printDebug(KEY_CONSUL_UTIL, "Value for key " + key + "not found at Consul node.");
-                    }
-                    else{
+                    } else {
                         printError(KEY_CONSUL_UTIL, err.message);
                     }
                 }
@@ -190,7 +169,7 @@ public function consulLookup(string key) returns string
             printError(KEY_CONSUL_UTIL, err.message);
         }
     }
-    if(valueNotFound){
+    if (valueNotFound) {
         printInfo(KEY_CONSUL_UTIL, "value not found at consul");
         endpointUrl = <string>consulDefaultUrls[key];
     } else {
@@ -200,93 +179,3 @@ public function consulLookup(string key) returns string
     return endpointUrl;
 }
 
-@Description {value:"Authenticate etcd by providing username and password and retrieve etcd token"}
-public function consulAuthenticate()
-{
-    printDebug(KEY_ETCD_UTIL, "Authenticating Etcd");
-    http:Request req;
-
-    consulToken = retrieveConfig("token", "");
-
-    if(consulToken == ""){
-        printDebug(KEY_ETCD_UTIL, "consul token has not been provided");
-        req.setHeader("X-Consul-Token", consulToken);
-        credentialsProvided = false;
-    } else {
-        printDebug(KEY_ETCD_UTIL, "consul token has been provided");
-        credentialsProvided = true;
-    }
-
-
-    req.setPayload("sample_value");
-
-    var response = consulEndpoint->put("/v1/kv/sample", req);
-    match response {
-        http:Response resp => {io:println(resp);
-            printDebug(KEY_ETCD_UTIL, "Http Response object obtained");
-            var msg = resp.getJsonPayload();io:println(msg);
-            match msg {
-                json jsonPayload => {
-                    //if(jsonPayload.token!= null)
-                    //{
-                    //    printDebug(KEY_ETCD_UTIL, "etcd has responded with a token");
-                    //    etcdConnectionEstablished = true;
-                    //    var token = <string>jsonPayload.token;
-                    //    match token {
-                    //        string value => {
-                    //            etcdToken = untaint value;
-                    //            etcdConnectionEstablished = true;
-                    //            printInfo(KEY_ETCD_UTIL, "Etcd Authentication Successful");
-                    //        }
-                    //        error err => {
-                    //            etcdConnectionEstablished = false;
-                    //            printError(KEY_ETCD_UTIL, err.message);
-                    //        }
-                    //    }
-                    //}
-                    if(jsonPayload.error!=null)
-                    {
-                        printDebug(KEY_ETCD_UTIL, "etcd has responded with an error");
-                        var authenticationError = <string>jsonPayload.error;
-                        match authenticationError {
-                            string value => {
-                                if(value.contains("authentication is not enabled"))
-                                {
-                                    printDebug(KEY_ETCD_UTIL, "etcd authentication is not enabled");
-                                    etcdAuthenticationEnabled = false;
-                                    etcdConnectionEstablished = true;
-                                    if(credentialsProvided)
-                                    {
-                                        printInfo(KEY_ETCD_UTIL, value);
-                                    }
-                                }
-                                if(value.contains("authentication failed, invalid user ID or password"))
-                                {
-                                    etcdConnectionEstablished = false;
-                                    printError(KEY_ETCD_UTIL, value);
-                                }
-                            }
-                            error err => {
-                                etcdConnectionEstablished = false;
-                                printError(KEY_ETCD_UTIL, err.message);
-                            }
-                        }
-                    }
-                    else{
-                        printDebug(KEY_ETCD_UTIL, "etcd has responded with a token");
-                        etcdConnectionEstablished = true;
-                    }
-                }
-                error err => {
-                    etcdConnectionEstablished = false;
-                    printError(KEY_ETCD_UTIL, err.message);
-                }
-            }
-        }
-        error err => {
-            printDebug(KEY_ETCD_UTIL, "Error object obtained");
-            etcdConnectionEstablished = false;
-            printError(KEY_ETCD_UTIL, err.message);
-        }
-    }
-}
