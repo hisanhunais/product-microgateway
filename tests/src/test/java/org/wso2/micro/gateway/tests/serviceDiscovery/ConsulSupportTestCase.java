@@ -18,7 +18,6 @@
 package org.wso2.micro.gateway.tests.serviceDiscovery;
 
 import com.ecwid.consul.v1.ConsulClient;
-import io.netty.handler.codec.http.HttpHeaderNames;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -33,21 +32,14 @@ import org.wso2.micro.gateway.tests.common.model.API;
 import org.wso2.micro.gateway.tests.common.model.ApplicationDTO;
 import org.wso2.micro.gateway.tests.context.ServerInstance;
 import org.wso2.micro.gateway.tests.context.Utils;
-import org.wso2.micro.gateway.tests.util.EtcdClient;
-import org.wso2.micro.gateway.tests.util.HttpClientRequest;
 import org.wso2.micro.gateway.tests.util.HttpResponse;
 import org.wso2.micro.gateway.tests.util.TestConstant;
 
 import java.io.File;
-import java.sql.SQLOutput;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ConsulSupportTestCase extends BaseTestCase{
     private String jwtTokenProd, jwtTokenSand, balPath, configPath;
     private String consulUrlParameter;
-    private String etcdusername = "root";
-    private String etcdpassword = "root";
     private String consulTokenParameter;
     private String pizzaShackEndpointSandConfigValue;
     private String pizzaShackProdConfigValue;
@@ -59,21 +51,12 @@ public class ConsulSupportTestCase extends BaseTestCase{
     private String pizzaShackSandNewEndpoint = "https://localhost:9443/echo/newsand";
     private String consulTimerParameter;
     private String overridingEndpointParameter;
-    private String base64EncodedPizzaShackProdKey;
-    private String base64EncodedPizzaShackSandKey;
-    private String base64EncodedPizzaShackProdValue;
-    private String base64EncodedPizzaShackSandValue;
-    private String base64EncodedPizzaShackProdNewValue;
-    private String base64EncodedPizzaShackSandNewValue;
     private String servicePath = "/pizzashack/1.0.0/menu";
-    private final static String INVALID_URL_AT_ETCD_RESPONSE = "{\"fault\":{\"code\":\"101505\", \"message\":\"Runtime Error\", \"description\":\"URL defined for key pizzashackprod is invalid\"}}";
-    private EtcdClient etcdClient;
-    private boolean etcdAuthenticationEnabled = true;
-    String pizzaShackProdEndpoint = "https://localhost:9443/echo/prod";
-    String pizzaShackProdNewEndpoint = "https://localhost:9443/echo/newprod";
-    String pizzaShackSandEndpoint = "https://localhost:9443/echo/sand";
+    private final static String INVALID_URL_AT_CONSUL_RESPONSE = "{\"fault\":{\"code\":\"101503\", \"message\":\"Runtime Error\", \"description\":\"URL defined at consul for key pizzashackprod is invalid\"}}";
+    private String pizzaShackProdEndpoint = "https://localhost:9443/echo/prod";
+    private String pizzaShackProdNewEndpoint = "https://localhost:9443/echo/newprod";
+    private String pizzaShackSandEndpoint = "https://localhost:9443/echo/sand";
     private ConsulClient client;
-    //private String token = "2c355bf1-a558-28dd-1399-1e535a655861";
     private String token = "mastertoken";
 
     @BeforeClass
@@ -127,45 +110,26 @@ public class ConsulSupportTestCase extends BaseTestCase{
         configPath = getClass().getClassLoader()
                 .getResource("confs" + File.separator + "default-test-config.conf").getPath();
 
-        //encodeValuesToBase64();
         prepareConfigValues();
         prepareCLIParameters();
-        initializeEtcdServer();
+        initializeConsulServer();
     }
 
-    private void initializeEtcdServer() throws Exception {
-        System.out.println("**************");
+    private void initializeConsulServer() {
         String consul_host = System.getenv("CONSUL_HOST");
-        System.out.println("**************");
         int consul_port = Integer.parseInt(System.getenv("CONSUL_PORT"));
         client = new ConsulClient(consul_host, consul_port);
-        System.out.println(consul_host);
-        System.out.println("**************");
 
         //add pizzashackprod and corresponding url to consul.
         client.setKVValue(pizzaShackProdEtcdKey, pizzaShackProdEndpoint, token, null);
         String consulUrl;
 
         consulUrl = "http://" + consul_host + ":" + String.valueOf(consul_port);
-        System.out.println("**************");
-        System.out.println(consulUrl);
         String consulUrlConfigValue = "consulurl";
         consulUrlParameter =  consulUrlConfigValue + "=" + consulUrl;
     }
 
-//    private void encodeValuesToBase64() throws Exception{
-//        String pizzaShackProdEndpoint = "https://localhost:9443/echo/prod";
-//        String pizzaShackProdNewEndpoint = "https://localhost:9443/echo/newprod";
-//        String pizzaShackSandEndpoint = "https://localhost:9443/echo/sand";
-//        base64EncodedPizzaShackProdKey = Utils.encodeValueToBase64(pizzaShackProdEtcdKey);
-//        base64EncodedPizzaShackSandKey = Utils.encodeValueToBase64(pizzaShackSandEtcdKey);
-//        base64EncodedPizzaShackProdValue = Utils.encodeValueToBase64(pizzaShackProdEndpoint);
-//        base64EncodedPizzaShackSandValue = Utils.encodeValueToBase64(pizzaShackSandEndpoint);
-//        base64EncodedPizzaShackProdNewValue = Utils.encodeValueToBase64(pizzaShackProdNewEndpoint);
-//        base64EncodedPizzaShackSandNewValue = Utils.encodeValueToBase64(pizzaShackSandNewEndpoint);
-//    }
-
-    private void prepareConfigValues(){
+    private void prepareConfigValues() {
         String apiEndpointSuffix = "endpoint_0";
         String consulKeySuffix = "consulKey";
         String prodUrlType = "prod";
@@ -176,7 +140,7 @@ public class ConsulSupportTestCase extends BaseTestCase{
         pizzaShackSandConfigValue = apiId + "_" + sandUrlType + "_" + consulKeySuffix;
     }
 
-    private void prepareCLIParameters(){
+    private void prepareCLIParameters() {
         String consulTokenConfigValue = "token";
         String consulTimerConfigValue = "consultimer";
         String consulTimer = "1000";
@@ -209,10 +173,8 @@ public class ConsulSupportTestCase extends BaseTestCase{
         HttpResponse response = Utils.invokeApi(jwtTokenProd, getServiceURLHttp(servicePath));
         Utils.assertResult(response, MockHttpServer.PROD_ENDPOINT_RESPONSE, 200);
 
+        //change the prod endpoint url at consul node
         client.setKVValue(pizzaShackProdEtcdKey, pizzaShackProdNewEndpoint, token, null);
-        //change the prod endpoint url at etcd node
-//        String token = etcdClient.authenticate();
-//        etcdClient.addKeyValuePair(token, base64EncodedPizzaShackProdKey, base64EncodedPizzaShackProdNewValue);
 
         retryPolicy(jwtTokenProd, MockHttpServer.PROD_ENDPOINT_NEW_RESPONSE, 200);
         microGWServer.stopServer(false);
@@ -227,10 +189,8 @@ public class ConsulSupportTestCase extends BaseTestCase{
         HttpResponse response = Utils.invokeApi(jwtTokenSand, getServiceURLHttp(servicePath));
         Utils.assertResult(response, MockHttpServer.SAND_ENDPOINT_RESPONSE, 200);
 
-        //add a new value to the relevant sandbox key in etcd
+        //add a new value to the relevant sandbox key in consul
         client.setKVValue(pizzaShackSandEtcdKey, pizzaShackSandNewEndpoint, token, null);
-//        String token = etcdClient.authenticate();
-//        etcdClient.addKeyValuePair(token, base64EncodedPizzaShackSandKey, base64EncodedPizzaShackSandNewValue);
 
         retryPolicy(jwtTokenSand, MockHttpServer.SAND_ENDPOINT_NEW_RESPONSE, 200);
         microGWServer.stopServer(false);
@@ -289,10 +249,8 @@ public class ConsulSupportTestCase extends BaseTestCase{
         HttpResponse response = Utils.invokeApi(jwtTokenSand, getServiceURLHttp(servicePath));
         Utils.assertResult(response, MockHttpServer.SAND_ENDPOINT_NEW_RESPONSE, 200);
 
-        //change the sand endpoint url at etcd node
+        //change the sand endpoint url at consul node
         client.setKVValue(pizzaShackSandEtcdKey, pizzaShackSandEndpoint, token, null);
-//        String token = etcdClient.authenticate();
-//        etcdClient.addKeyValuePair(token, base64EncodedPizzaShackSandKey, base64EncodedPizzaShackSandValue);
 
         retryPolicy(jwtTokenSand, MockHttpServer.SAND_ENDPOINT_RESPONSE, 200);
         microGWServer.stopServer(false);
@@ -304,85 +262,33 @@ public class ConsulSupportTestCase extends BaseTestCase{
         microGWServer.startMicroGwServer(balPath, args);
 
         //insert an invalid url for the pizzashackprod key at etcd node
-
-
         String invalidUrlValue = "abcd";
         client.setKVValue(pizzaShackProdEtcdKey, invalidUrlValue, token, null);
-//        String token = etcdClient.authenticate();
-//        etcdClient.addKeyValuePair(token, base64EncodedPizzaShackProdKey, Utils.encodeValueToBase64(invalidUrlValue));
 
-        retryPolicy(jwtTokenProd, INVALID_URL_AT_ETCD_RESPONSE, 500);
+        retryPolicy(jwtTokenProd, INVALID_URL_AT_CONSUL_RESPONSE, 500);
         microGWServer.stopServer(false);
     }
-//
-//    @Test(description = "Test Etcd Support when etcd credentials are provided, but etcd authentication is disabled")
-//    public void testCredentialsProvidedEtcdAuthDisabled() throws Exception {
-//        //disabling the etcd server authentication
-//        String token = etcdClient.authenticate();
-//        etcdClient.disableAuthentication(token);
-//        etcdAuthenticationEnabled = false;
-//
-//        String[] args = { "--config", configPath, "-e", consulUrlParameter, "-e", consulTokenParameter, "-e", pizzaShackProdParameter, "-e", pizzaShackSandParameter, "-e", consulTimerParameter };
-//        microGWServer.startMicroGwServer(balPath, args);
-//
-//        //test the prod endpoint
-//        HttpResponse response = Utils.invokeApi(jwtTokenProd, getServiceURLHttp(servicePath));
-//        Utils.assertResult(response, MockHttpServer.PROD_ENDPOINT_RESPONSE, 200);
-//
-//        //change the prod endpoint url at etcd node
-//        etcdClient.addKeyValuePair(base64EncodedPizzaShackProdKey, base64EncodedPizzaShackProdNewValue);
-//
-//        retryPolicy(jwtTokenProd, MockHttpServer.PROD_ENDPOINT_NEW_RESPONSE, 200);
-//        microGWServer.stopServer(false);
-//    }
-//
-//    @Test(description = "Test Etcd Support when etcd credentials are not provided, but etcd authentication is disabled")
-//    public void testCredentialsNotProvidedEtcdAuthDisabled() throws Exception {
-//        //disabling the etcd server authentication
-//        String token = etcdClient.authenticate();
-//        etcdClient.disableAuthentication(token);
-//        etcdAuthenticationEnabled = false;
-//
-//        String[] args = { "--config", configPath, "-e", consulUrlParameter, "-e", pizzaShackProdParameter, "-e", pizzaShackSandParameter, "-e", consulTimerParameter };
-//        microGWServer.startMicroGwServer(balPath, args);
-//
-//        //test the prod endpoint
-//        HttpResponse response = Utils.invokeApi(jwtTokenProd, getServiceURLHttp(servicePath));
-//        Utils.assertResult(response, MockHttpServer.PROD_ENDPOINT_RESPONSE, 200);
-//
-//        //change the prod endpoint url at etcd node
-//        etcdClient.addKeyValuePair(base64EncodedPizzaShackProdKey, base64EncodedPizzaShackProdNewValue);
-//
-//        retryPolicy(jwtTokenProd, MockHttpServer.PROD_ENDPOINT_NEW_RESPONSE, 200);
-//        microGWServer.stopServer(false);
-//    }
 
     private void retryPolicy(String token, String responseData, int responseCode) throws Exception {
         boolean testPassed = false;
-        for(int retries = 0; retries < 5; retries++){
+        for (int retries = 0; retries < 5; retries++) {
             Utils.delay(1000);
             HttpResponse response = Utils.invokeApi(token, getServiceURLHttp(servicePath));
-            if(response.getData().equals(responseData) && response.getResponseCode() == responseCode){
+            if (response.getData().equals(responseData) && response.getResponseCode() == responseCode) {
                 testPassed = true;
                 break;
             }
         }
 
-        if(!testPassed){
+        if (!testPassed) {
             Assert.fail();
         }
     }
 
     @AfterMethod
-    public void consulInitialState() throws Exception {
-//        if(!etcdAuthenticationEnabled) {
-//            etcdClient.enableAuthentication();
-//        }
+    public void consulInitialState() {
         client.setKVValue(pizzaShackProdEtcdKey, pizzaShackProdEndpoint, token, null);
         client.deleteKVValue(pizzaShackSandEtcdKey, token);
-//        String token = etcdClient.authenticate();
-//        etcdClient.addKeyValuePair(token, base64EncodedPizzaShackProdKey, base64EncodedPizzaShackProdValue);
-//        etcdClient.deleteKeyValuePair(token, base64EncodedPizzaShackSandKey);
     }
 
     @AfterClass
