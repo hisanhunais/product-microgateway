@@ -127,7 +127,7 @@ public function consulLookup(string key) returns string {
     string base64EncodedValue;
     http:Request req;
     boolean valueNotFound = false;
-    string requestPath = consulKVBasePath + key;
+    string apiRequestPath = consulKVBasePath + key;
     string token = retrieveConfig("token", "");
 
     if (token != "") {
@@ -135,7 +135,7 @@ public function consulLookup(string key) returns string {
         printDebug(KEY_CONSUL_UTIL, "Adding consul token to request header");
     }
 
-    var response = consulEndpoint->get(requestPath, message = req);
+    var response = consulEndpoint->get(apiRequestPath, message = req);
     match response {
         http:Response resp => {
             printDebug(KEY_CONSUL_UTIL, "Http Response object obtained");
