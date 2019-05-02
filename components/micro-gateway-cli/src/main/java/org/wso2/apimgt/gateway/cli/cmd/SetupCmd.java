@@ -45,6 +45,8 @@ import org.wso2.apimgt.gateway.cli.model.config.Token;
 import org.wso2.apimgt.gateway.cli.model.config.TokenBuilder;
 import org.wso2.apimgt.gateway.cli.model.config.BasicAuth;
 import org.wso2.apimgt.gateway.cli.model.config.Etcd;
+import org.wso2.apimgt.gateway.cli.model.config.Consul;
+import org.wso2.apimgt.gateway.cli.model.config.ServiceDiscovery;
 import org.wso2.apimgt.gateway.cli.model.rest.ClientCertMetadataDTO;
 import org.wso2.apimgt.gateway.cli.oauth.OAuthService;
 import org.wso2.apimgt.gateway.cli.oauth.OAuthServiceImpl;
@@ -133,6 +135,10 @@ public class SetupCmd implements GatewayLauncherCmd {
     @Parameter(names = { "-etcd", "--enable-etcd" }, hidden = true, arity = 0)
     private boolean isEtcdEnabled;
 
+    @SuppressWarnings("unused")
+    @Parameter(names = { "-consul", "--enable-consul" }, hidden = true, arity = 0)
+    private boolean isConsulEnabled;
+
     private String publisherEndpoint;
     private String adminEndpoint;
     private String registrationEndpoint;
@@ -189,8 +195,24 @@ public class SetupCmd implements GatewayLauncherCmd {
         //set etcd requirement
         Etcd etcd = new Etcd();
         etcd.setEtcdEnabled(isEtcdEnabled);
-        GatewayCmdUtils.setEtcd(etcd);
         logger.debug("Etcd is enabled : " + isEtcdEnabled);
+
+        //set consul requirement
+        Consul consul = new Consul();
+        consul.setConsulEnabled(isConsulEnabled);
+        logger.debug("Consul is enabled : " + isConsulEnabled);
+
+        //set service discovery requirements
+        ServiceDiscovery serviceDiscovery = new ServiceDiscovery();
+        serviceDiscovery.setEtcd(etcd);
+        serviceDiscovery.setConsul(consul);
+
+        if(isEtcdEnabled || isConsulEnabled) {
+            serviceDiscovery.setEnabled(true);
+            logger.debug("Service Discovery is enabled : true" );
+        }
+
+        GatewayCmdUtils.setServiceDiscovery(serviceDiscovery);
 
         Config config = GatewayCmdUtils.getConfig();
         boolean isOverwriteRequired = false;

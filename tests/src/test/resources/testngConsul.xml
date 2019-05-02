@@ -17,16 +17,16 @@
 
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 
-<suite name="Micro-GW-ServiceDiscovery-etcd-Test-Suite">
+<suite name="Micro-GW-ServiceDiscovery-consul-Test-Suite">
     <listeners>
         <!--Disabled since there are no any pre configured apis -->
         <!--<listener class-name="org.wso2.micro.gateway.tests.listener.TestExecutionListener"/>-->
         <listener class-name="org.wso2.micro.gateway.tests.listener.TestNGListener"/>
     </listeners>
 
-    <test name="micro-gw-serviceDiscovery-etcd" preserve-order="true" parallel="false">
+    <test name="micro-gw-serviceDiscovery-consul" preserve-order="true" parallel="false">
         <classes>
-            <class name="org.wso2.micro.gateway.tests.serviceDiscovery.EtcdSupportTestCase"/>
+            <class name="org.wso2.micro.gateway.tests.serviceDiscovery.ConsulSupportTestCase"/>
         </classes>
     </test>
 </suite>

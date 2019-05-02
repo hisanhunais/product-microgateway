@@ -115,6 +115,11 @@
             <version>20180130</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.ecwid.consul</groupId>
+            <artifactId>consul-api</artifactId>
+            <version>1.4.2</version>
+        </dependency>
 
     </dependencies>
 
@@ -259,6 +264,103 @@
                             </systemPropertyVariables>
                             <suiteXmlFiles>
                                 <suiteXmlFile>src/test/resources/testngEtcd.xml</suiteXmlFile>
+                            </suiteXmlFiles>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>local-consul</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>start-docker-for-consul</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>start</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>stop-docker-for-consul</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>stop</goal>
+                                    <goal>remove</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <alias>mgw-consul</alias>
+                                    <name>consul:latest</name>
+                                    <run>
+                                        <namingStrategy>alias</namingStrategy>
+                                        <cmd>
+                                            <exec>
+                                                <arg>agent</arg>
+                                                <arg>-dev</arg>
+                                                <arg>-client</arg>
+                                                <arg>0.0.0.0</arg>
+                                                <arg>-config-file=/etc/consul-config.json</arg>
+                                            </exec>
+                                        </cmd>
+                                        <ports>
+                                            <port>8500:8500</port>
+                                        </ports>
+                                        <volumes>
+                                            <bind>
+                                                <volume>${basedir}/resources/consul-config.json:/etc/consul-config.json</volume>
+                                            </bind>
+                                        </volumes>
+                                    </run>
+                                </image>
+                            </images>
+                            <skip>${skipITs}</skip>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>2.19.1</version>
+                        <executions>
+                            <execution>
+                                <id>integration-test-for-consul</id>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>verify-for-consul</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <environmentVariables>
+                                <CONSUL_HOST>${docker.container.mgw-consul.ip}</CONSUL_HOST>
+                                <CONSUL_PORT>8500</CONSUL_PORT>
+                            </environmentVariables>
+                            <systemPropertyVariables>
+                                <server.zip>
+                                    ${basedir}/../distribution/target/wso2am-micro-gw-${project.version}.zip
+                                </server.zip>
+                                <project.build.directory>${project.build.directory}</project.build.directory>
+                                <java.util.logging.config.file>${project.build.testOutputDirectory}/logging.properties</java.util.logging.config.file>
+                                <javax.net.ssl.trustStore>${basedir}/resources/ballerinaTruststore.p12</javax.net.ssl.trustStore>
+                                <javax.net.ssl.trustStorePassword>ballerina</javax.net.ssl.trustStorePassword>
+                            </systemPropertyVariables>
+                            <suiteXmlFiles>
+                                <suiteXmlFile>src/test/resources/testngConsul.xml</suiteXmlFile>
                             </suiteXmlFiles>
                         </configuration>
                     </plugin>

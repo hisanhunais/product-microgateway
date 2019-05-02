@@ -88,18 +88,32 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
         http:Response|error clientResponse;
         string destination_attribute;
         runtime:getInvocationContext().attributes["timeStampRequestOut"] = time:currentTime().time;
-        {{#if etcd.etcdEnabled}}boolean reinitRequired;
-        string etcdKey;
-        string etcdKeyConfigValue;
-        boolean|error hasUrlChanged;
-        http:ClientEndpointConfig newConfig;
-        boolean reinitFailed = false;
-        string apiId = "{{api.id}}";{{/if}}
+        {{#if serviceDiscovery.isEnabled}}boolean reinitRequired;
+            string serviceDiscoveryTool;
+            string keyConfigValue;
+            string key;
+            boolean|error hasUrlChanged;
+            http:ClientEndpointConfig newConfig;
+            boolean reinitFailed = false;
+            string apiId = "{{api.id}}";
+            {{#if serviceDiscovery.etcd.etcdEnabled}}serviceDiscoveryTool = "etcd";
+            boolean connectionEstablished = gateway:etcdConnectionEstablished;
+            map urlChanged = gateway:etcdUrlChanged;
+            map urls = gateway:etcdUrls;
+            {{else if serviceDiscovery.consul.consulEnabled}}serviceDiscoveryTool = "consul";
+            boolean connectionEstablished = gateway:consulConnectionEstablished;
+            map urlChanged = gateway:consulUrlChanged;
+            map urls = gateway:consulUrls;
+            {{/if}}
+        {{/if}}
         {{#endpointConfig.0}}
                 if("PRODUCTION" == runtime:getInvocationContext().attributes["KEY_TYPE"]) {
                     destination_attribute = "{{inline.endpointConfig.list.0.url}}";
-                {{#if etcd.etcdEnabled}}
-                    etcdKeyConfigValue = apiId + "_Production_etcdKey";
+                {{#if serviceDiscovery.etcd.etcdEnabled}}
+                    keyConfigValue = apiId + "_Production_etcdKey";
+                    {{>prodEndpointReinit}}
+                 {{else if serviceDiscovery.consul.consulEnabled}}
+                    keyConfigValue = apiId + "_Production_consulKey";
                     {{>prodEndpointReinit}}
                 {{else}}
                     clientResponse = {{qualifiedServiceName}}_Production->forward(urlPostfix, req);
@@ -110,8 +124,11 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
         {{#endpointConfig.1}}
                 else {
                     destination_attribute = "{{inline.endpointConfig.list.0.url}}";
-                {{#if etcd.etcdEnabled}}
-                    etcdKeyConfigValue = apiId + "_Sandbox_etcdKey";
+                {{#if serviceDiscovery.etcd.etcdEnabled}}
+                    keyConfigValue = apiId + "_Sandbox_etcdKey";
+                    {{>sandEndpointReinit}}
+                {{else if serviceDiscovery.consul.consulEnabled}}
+                    keyConfigValue = apiId + "_Sandbox_consulKey";
                     {{>sandEndpointReinit}}
                 {{else}}
                     clientResponse = {{qualifiedServiceName}}_Sandbox->forward(urlPostfix, req);
@@ -138,6 +155,10 @@ service<http:Service> {{cut qualifiedServiceName " "}} bind {{#api.transport}}{{
                 if(errorMessage.contains("connection timed out") || errorMessage.contains("Idle timeout triggered")) {
                     errorCode = 101504;
                     errorDescription = "Connection timed out";
+                }
+                if(errorMessage.contains("Malformed URL")) {
+                    errorCode = 101505;
+                    errorDescription = <string>err.description;
                 }
                 runtime:getInvocationContext().attributes["error_response"] = err;
                 runtime:getInvocationContext().attributes["error_response_code"] = errorCode;
